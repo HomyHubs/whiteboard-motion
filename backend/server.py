@@ -6,6 +6,7 @@ from .hardware import detect_nvidia_gpus, hardware_report
 from .profiles import select_qwen_profile
 from .models import ModelManager
 from .jobs import JobManager
+from .services import submit_model_download
 
 JOBS = JobManager()
 MODELS = ModelManager()
@@ -29,7 +30,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Access-Control-Allow-Origin", "http://localhost:1420")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
-        self.send_header("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET,POST,DELETE,OPTIONS")
         self.end_headers(); self.wfile.write(body)
     def _body(self) -> dict:
         size = int(self.headers.get("Content-Length", "0")); raw = self.rfile.read(size) if size else b"{}"
@@ -49,6 +50,15 @@ class Handler(BaseHTTPRequestHandler):
         self._json(404, {"error": "not found"})
     def do_POST(self):
         path = urlparse(self.path).path
+        model_match=re.fullmatch(r"/models/([A-Za-z0-9._-]+)/(accept|download|verify)",path)
+        if model_match:
+            model_id,action=model_match.groups()
+            try:
+                if action=='accept': MODELS.accept_license(model_id);return self._json(200,next(x for x in MODELS.list_status() if x['id']==model_id))
+                if action=='download':
+                    job=submit_model_download(MODELS,JOBS,model_id);return self._json(202,job.to_dict())
+                if action=='verify':return self._json(200,MODELS.verify(model_id))
+            except (KeyError,RuntimeError) as exc:return self._json(400,{'error':str(exc)})
         if path == "/jobs/demo":
             body = self._body(); uses_gpu = bool(body.get("usesGpu", False)); seconds = min(60.0, max(0.1, float(body.get("seconds", 5))))
             job = JOBS.submit("demo-gpu" if uses_gpu else "demo-cpu", demo_job(seconds, uses_gpu), uses_gpu)
@@ -56,6 +66,11 @@ class Handler(BaseHTTPRequestHandler):
         match = re.fullmatch(r"/jobs/([a-f0-9]+)/cancel", path)
         if match: return self._json(200, {"cancelled": JOBS.cancel(match.group(1))})
         self._json(404, {"error": "not found"})
+    def do_DELETE(self):
+        path=urlparse(self.path).path;match=re.fullmatch(r"/models/([A-Za-z0-9._-]+)",path)
+        if not match:return self._json(404,{"error":"not found"})
+        try:MODELS.entry(match.group(1));MODELS.remove(match.group(1));return self._json(200,{"removed":True,"id":match.group(1)})
+        except KeyError as exc:return self._json(404,{"error":str(exc)})
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(); parser.add_argument("--host", default="127.0.0.1"); parser.add_argument("--port", type=int, default=8765)

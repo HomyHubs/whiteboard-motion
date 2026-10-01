@@ -35,11 +35,11 @@ Quy ước: `[ ]` Todo · `[~]` In progress · `[x]` Done
 - [x] P3.3 Streaming generation và cancel.
 - [x] P3.4 Cache audio theo model/reference/text/settings.
 - [~] P3.5 Benchmark CPU, RTX 3060/4060/5060/5060 Ti — harness/workflow đã sẵn sàng, chờ report máy thật.
-- [ ] P3.6 Timeline/SRT integration với pipeline hiện tại.
+- [x] P3.6 Timeline/SRT integration với pipeline hiện tại.
 
 ## P4 — Desktop/Packaging
 - [x] P4.1 Tauri + React project shell.
-- [ ] P4.2 Model Manager UI: dung lượng, license, download, verify, delete.
+- [x] P4.2 Model Manager UI: dung lượng, license, download, verify, delete.
 - [ ] P4.3 Project/scene editor và tích hợp `assets/preview.html`.
 - [ ] P4.4 Installer Windows 11 và Python sidecar.
 - [ ] P4.5 Bundle FFmpeg phù hợp license; NVENC + libx264 fallback.

@@ -1,8 +1,15 @@
 # CURRENT
 
 ## Đang làm
-- P1.6–P1.9 vẫn chờ report từ GPU thật.
-- P3.5 chờ report VoxCPM2 từ CPU và GPU thật.
+- P1.6–P1.9 và P3.5 vẫn chờ report phần cứng thật.
+- Chờ Agent kiểm thử thực hiện checklist **TEST HANDOFF** bên dưới và ghi kết quả vào file này.
+
+## Hai task vừa hoàn thành — P3.6 và P4.2
+- VoxCPM2 tạo audio từng SRT cue bằng streaming/cache, sau đó dùng timeline/build-track/retime/mux FFmpeg hiện có.
+- Hỗ trợ compact retime, pause riêng, voice clone consent và video mux.
+- Model Manager UI hiển thị revision, dung lượng, mục đích, license và trạng thái cài đặt.
+- Accept license, Download background job, Verify và Delete đều có API/UI; không tự động tải model.
+- Download job xuất hiện trong bảng Jobs, hỗ trợ theo dõi và cancel.
 
 ## Task vừa xử lý — P3.4 và P3.5
 - P3.4 hoàn thành: cache key gồm engine/model revision/text/language/seed/reference SHA-256/reference text/settings/format.
@@ -50,11 +57,100 @@
 - P0.6: HTTP backend cục bộ và Tauri + React shell hiển thị hardware, Qwen profile, models và jobs.
 - P4.1 cũng hoàn thành ở mức source shell; frontend production build đã chạy thành công.
 
+## TEST HANDOFF — Agent kiểm thử phải cập nhật phần này
+
+### Quy tắc
+1. Pull đúng commit mới nhất từ `HomyHubs/whiteboard-motion`; ghi SHA đang test.
+2. Không sửa code trong lúc test. Nếu cần sửa, tạo commit riêng và ghi SHA mới.
+3. Chạy từng nhóm test bên dưới; không ghi PASS nếu không có command/log hoặc file report.
+4. Ghi kết quả trực tiếp vào mục **Kết quả test từ Agent khác** trong file này rồi commit/push.
+5. Với lỗi: ghi command, exit code, stack trace rút gọn, bước tái hiện và đường dẫn artifact/report.
+6. Không commit API key, voice reference riêng tư, model weights, output WAV/PNG lớn hoặc đường dẫn chứa thông tin nhạy cảm.
+
+### A. Smoke test bắt buộc
+```powershell
+python -m unittest discover -s backend/tests -v
+python -m backend.cli hardware
+python -m backend.cli profile
+python -m backend.cli models list
+powershell -ExecutionPolicy Bypass -File tools/restore_assets.ps1
+cd app
+npm install --no-audit --no-fund
+npm run build
+cd ..
+```
+Kỳ vọng: toàn bộ unit test PASS; hardware/profile/models trả JSON; asset checksum hợp lệ; Vite build thành công.
+
+### B. Backend và Model Manager UI
+```powershell
+python -m backend.cli serve
+# terminal khác
+curl.exe http://127.0.0.1:8765/health
+curl.exe http://127.0.0.1:8765/models
+cd app
+npm run dev
+```
+Kiểm tra thủ công:
+- UI báo Backend online và hiển thị đúng GPU/profile.
+- Model chưa accept license không thể Download.
+- Accept license chỉ sau confirmation; Download tạo background job.
+- Verify trả `ok=true` với model đầy đủ; Delete yêu cầu confirmation và cập nhật UI.
+- Cancel job không làm backend treo.
+
+### C. Windows Credential Manager
+```powershell
+python -m backend.cli credentials set openai
+python -m backend.cli credentials check openai
+cmdkey /list | findstr WhiteboardVideo
+python -m backend.cli credentials delete openai
+python -m backend.cli credentials check openai
+```
+Dùng key test giả, không dùng production key. Kỳ vọng: configured chuyển `true` rồi `false`; secret không xuất hiện trong console/history/config.
+
+### D. VoxCPM2 SRT timeline — cần model khoảng 5 GB
+```powershell
+python -m backend.cli models download voxcpm2
+python tools/voxcpm_srt.py path\input.srt --output path\narration.m4a --device auto
+python tools/voxcpm_srt.py path\input.srt --output path\narration-tight.m4a --retime-out path\input.tight.srt --gap 0.3
+```
+Kiểm tra:
+- Mỗi cue có file WAV hợp lệ; lần chạy hai báo cache hit/không load lại model.
+- Audio khớp thứ tự cue; `input.tight.srt` tăng thời gian đơn điệu, không chồng cue.
+- Không còn `*.part.wav` sau thành công/cancel.
+- Nếu test clone voice, chỉ dùng giọng được phép và bắt buộc `--confirm-voice-consent`.
+
+### E. Benchmark trên máy người dùng RTX 5060 Ti 16 GB
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/prepare_voxcpm_benchmark.ps1
+powershell -ExecutionPolicy Bypass -File tools/benchmark_voxcpm_rtx5060ti.ps1
+# Qwen: chọn một backend đã tải model
+powershell -ExecutionPolicy Bypass -File tools/benchmark_rtx5060ti.ps1 -Backend ncnn-vulkan
+```
+Đính kèm JSON từ `benchmarks/voice-reports/` và `benchmarks/reports/`. Ghi driver, RAM, VRAM, backend, resolution, peak VRAM, thời gian và RTF.
+
+### Kết quả test từ Agent khác
+> Agent kiểm thử thay các dòng `PENDING`; không xóa hướng dẫn phía trên.
+
+| Ngày | Commit SHA | Máy/OS/GPU/RAM | Nhóm | Kết quả | Exit code | Artifact/report | Ghi chú/lỗi |
+|---|---|---|---|---|---:|---|---|
+| PENDING | PENDING | Windows 11 / PENDING | A. Smoke | PENDING | PENDING | PENDING | PENDING |
+| PENDING | PENDING | Windows 11 / PENDING | B. Model Manager UI | PENDING | PENDING | PENDING | PENDING |
+| PENDING | PENDING | Windows 11 / PENDING | C. Credential Manager | PENDING | PENDING | PENDING | PENDING |
+| PENDING | PENDING | Windows 11 / RTX 5060 Ti 16 GB | D. VoxCPM SRT | PENDING | PENDING | PENDING | PENDING |
+| PENDING | PENDING | Windows 11 / RTX 5060 Ti 16 GB | E. Benchmarks | PENDING | PENDING | PENDING | PENDING |
+
+### Yêu cầu review sau test
+- **Blocker:** PENDING
+- **Major:** PENDING
+- **Minor:** PENDING
+- **Đề xuất thay đổi:** PENDING
+- **Có thể tiếp tục task kế tiếp:** PENDING (Yes/No + lý do)
+
 ## Kiểm tra gần nhất
-- 41 Python unit tests thành công, gồm audio cache corruption/invalidation, cache hit không load model và voice benchmark RTF.
+- 44 Python unit tests thành công, gồm SRT cue order, model download job và các nhóm test trước.
 - Benchmark harness tạo report JSON với GPU/driver/RAM, revision, elapsed time, peak VRAM, utilization, temperature và output SHA-256.
 - GitHub workflow thủ công đã sẵn sàng cho self-hosted runner gắn nhãn `rtx-4060` hoặc `rtx-5060`.
-- Source đã đồng bộ lên `HomyHubs/whiteboard-motion`, commit hiện tại `317280b82dd22708e82d146138b74d0b55b1aca1`.
+- Source được đồng bộ liên tục lên `HomyHubs/whiteboard-motion`; Agent test phải ghi commit SHA thực tế trong bảng TEST HANDOFF.
 - Chưa có số benchmark thật vì môi trường hiện tại không có Windows/NVIDIA GPU phù hợp.
 - Chưa chạy native `cargo tauri build` vì môi trường làm việc không có Rust/Cargo.
 
