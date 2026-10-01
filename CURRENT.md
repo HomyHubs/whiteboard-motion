@@ -24,10 +24,11 @@
 - P4.1 cũng hoàn thành ở mức source shell; frontend production build đã chạy thành công.
 
 ## Kiểm tra gần nhất
-- 13 Python unit tests thành công, gồm job queue, profile, license guard và ncnn validation.
-- Tải thật Windows ncnn runtime 20260928, xác minh SHA-256 và tìm thấy executable 14,456,320 bytes.
-- `npm run build` thành công.
-- Chưa tải model ncnn 31.2 GB hoặc chạy inference vì môi trường không có GPU Windows.
+- 15 Python unit tests thành công, gồm job queue, profile, license guard, ncnn validation và benchmark input validation.
+- Benchmark harness tạo report JSON với GPU/driver/RAM, revision, elapsed time, peak VRAM, utilization, temperature và output SHA-256.
+- GitHub workflow thủ công đã sẵn sàng cho self-hosted runner gắn nhãn `rtx-4060` hoặc `rtx-5060`.
+- Source đã đồng bộ lên `HomyHubs/whiteboard-motion`, commit hiện tại `317280b82dd22708e82d146138b74d0b55b1aca1`.
+- Chưa có số benchmark thật vì môi trường hiện tại không có Windows/NVIDIA GPU phù hợp.
 - Chưa chạy native `cargo tauri build` vì môi trường làm việc không có Rust/Cargo.
 
 ## Vừa hoàn thành
@@ -43,6 +44,6 @@
 
 ## Giới hạn hiện tại
 - Đã có Tauri/React shell; chưa có native installer và chưa build bằng Cargo trên Windows.
-- Low-VRAM Qwen 8 GB mới có cấu hình offload; chưa tích hợp GGUF backend production.
-- Chưa benchmark trên GPU thật.
-- Model revision trong manifest cần pin SHA sau khi kiểm thử acceptance.
+- Đã tích hợp ncnn/Vulkan low-VRAM, nhưng còn ở giai đoạn early-development upstream và cần acceptance test trên từng GPU.
+- P1.6/P1.7 vẫn In progress cho tới khi report được tạo trên RTX 4060 và RTX 5060 thật.
+- Binary demo asset không push trực tiếp qua MCP; chạy `tools/restore_assets.ps1` để tải asset đã pin và kiểm tra SHA-256.
