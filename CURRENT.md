@@ -2,7 +2,15 @@
 
 ## Đang làm
 - P1.6–P1.9 và P3.5 vẫn chờ report phần cứng thật.
-- Chờ Agent kiểm thử thực hiện checklist **TEST HANDOFF** bên dưới và ghi kết quả vào file này.
+- P4.4 chờ Windows CI tạo MSI/NSIS và Agent test cài đặt trên Windows 11.
+- Checklist **TEST HANDOFF** vẫn bắt buộc; Agent kiểm thử ghi kết quả trực tiếp vào file này.
+
+## Task vừa xử lý — P4.3 và P4.4
+- P4.3 hoàn thành: project store trong app-data, ID validation chống path traversal và atomic JSON writes.
+- UI tạo/chọn project, tạo/sửa scene manifest và nhúng `assets/preview.html` trong iframe.
+- P4.4 đã có PyInstaller sidecar, Tauri externalBin, PowerShell build MSI/NSIS và Windows CI artifact.
+- Sidecar bundle control plane/downloader/project API; không bundle model weights hoặc ML runtime nặng.
+- P4.4 vẫn `[~]` cho đến khi Windows artifact được cài và smoke test thành công.
 
 ## Hai task vừa hoàn thành — P3.6 và P4.2
 - VoxCPM2 tạo audio từng SRT cue bằng streaming/cache, sau đó dùng timeline/build-track/retime/mux FFmpeg hiện có.
@@ -128,6 +136,19 @@ powershell -ExecutionPolicy Bypass -File tools/benchmark_rtx5060ti.ps1 -Backend 
 ```
 Đính kèm JSON từ `benchmarks/voice-reports/` và `benchmarks/reports/`. Ghi driver, RAM, VRAM, backend, resolution, peak VRAM, thời gian và RTF.
 
+### F. Windows sidecar và installer
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/build_backend_sidecar.ps1
+powershell -ExecutionPolicy Bypass -File tools/build_windows_installer.ps1
+```
+Sau đó cài cả NSIS hoặc MSI trên Windows 11 sạch và kiểm tra:
+- App mở mà không cần Python trong PATH.
+- Sidecar tự khởi động; `/health`, Projects và Models hoạt động.
+- Tạo project/scene, đóng/mở app và dữ liệu vẫn tồn tại trong app-data.
+- Annotation preview mở trong app.
+- Uninstall không xóa model/project người dùng ngoài ý muốn.
+Ghi tên installer, kích thước, SHA-256, thời gian build, log lỗi và đường dẫn artifact. P4.4 chỉ được đánh dấu Done sau khi nhóm này PASS.
+
 ### Kết quả test từ Agent khác
 > Agent kiểm thử thay các dòng `PENDING`; không xóa hướng dẫn phía trên.
 
@@ -138,6 +159,7 @@ powershell -ExecutionPolicy Bypass -File tools/benchmark_rtx5060ti.ps1 -Backend 
 | PENDING | PENDING | Windows 11 / PENDING | C. Credential Manager | PENDING | PENDING | PENDING | PENDING |
 | PENDING | PENDING | Windows 11 / RTX 5060 Ti 16 GB | D. VoxCPM SRT | PENDING | PENDING | PENDING | PENDING |
 | PENDING | PENDING | Windows 11 / RTX 5060 Ti 16 GB | E. Benchmarks | PENDING | PENDING | PENDING | PENDING |
+| PENDING | PENDING | Windows 11 sạch | F. Sidecar + MSI/NSIS | PENDING | PENDING | PENDING | PENDING |
 
 ### Yêu cầu review sau test
 - **Blocker:** PENDING
@@ -147,7 +169,7 @@ powershell -ExecutionPolicy Bypass -File tools/benchmark_rtx5060ti.ps1 -Backend 
 - **Có thể tiếp tục task kế tiếp:** PENDING (Yes/No + lý do)
 
 ## Kiểm tra gần nhất
-- 44 Python unit tests thành công, gồm SRT cue order, model download job và các nhóm test trước.
+- 47 Python unit tests thành công, gồm project path traversal/atomic write; project/preview HTTP smoke test và React build thành công.
 - Benchmark harness tạo report JSON với GPU/driver/RAM, revision, elapsed time, peak VRAM, utilization, temperature và output SHA-256.
 - GitHub workflow thủ công đã sẵn sàng cho self-hosted runner gắn nhãn `rtx-4060` hoặc `rtx-5060`.
 - Source được đồng bộ liên tục lên `HomyHubs/whiteboard-motion`; Agent test phải ghi commit SHA thực tế trong bảng TEST HANDOFF.

@@ -1,0 +1,37 @@
+name: Windows installer
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'backend/**'
+      - 'backend_sidecar.py'
+      - 'requirements-backend.txt'
+      - 'tools/build_*sidecar.ps1'
+      - 'tools/build_windows_installer.ps1'
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22', cache: 'npm', cache-dependency-path: app/package-lock.json}
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: {workspaces: app/src-tauri}
+      - name: Build backend sidecar
+        shell: powershell
+        run: powershell -ExecutionPolicy Bypass -File tools/build_backend_sidecar.ps1
+      - name: Build Tauri installers
+        shell: powershell
+        run: |
+          cd app
+          npm ci
+          npm run tauri build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: whiteboard-video-windows-installers
+          path: app/src-tauri/target/release/bundle/**

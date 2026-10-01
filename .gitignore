@@ -31,3 +31,7 @@ benchmarks/outputs/
 benchmarks/reports/*.json
 benchmarks/voice-outputs/
 benchmarks/voice-reports/*.json
+.sidecar-venv/
+build/
+dist/
+app/src-tauri/binaries/*.exe

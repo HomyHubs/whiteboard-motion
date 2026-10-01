@@ -1,15 +1,19 @@
 from __future__ import annotations
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import argparse, json, re, time
+from pathlib import Path
 from urllib.parse import urlparse
 from .hardware import detect_nvidia_gpus, hardware_report
 from .profiles import select_qwen_profile
 from .models import ModelManager
+from .projects import ProjectStore,InvalidProjectId
 from .jobs import JobManager
 from .services import submit_model_download
 
 JOBS = JobManager()
 MODELS = ModelManager()
+PROJECTS = ProjectStore()
+ROOT = Path(__file__).resolve().parent.parent
 
 def demo_job(seconds: float, use_gpu: bool):
     def run(ctx):
@@ -30,8 +34,10 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Access-Control-Allow-Origin", "http://localhost:1420")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
-        self.send_header("Access-Control-Allow-Methods", "GET,POST,DELETE,OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
         self.end_headers(); self.wfile.write(body)
+    def _raw(self,status:int,body:bytes,content_type:str)->None:
+        self.send_response(status);self.send_header("Content-Type",content_type);self.send_header("Content-Length",str(len(body)));self.send_header("Access-Control-Allow-Origin","http://localhost:1420");self.end_headers();self.wfile.write(body)
     def _body(self) -> dict:
         size = int(self.headers.get("Content-Length", "0")); raw = self.rfile.read(size) if size else b"{}"
         return json.loads(raw or b"{}")
@@ -39,6 +45,20 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = urlparse(self.path).path
         if path == "/health": return self._json(200, {"ok": True})
+        if path == "/preview": return self._raw(200,(ROOT/'assets'/'preview.html').read_bytes(),'text/html; charset=utf-8')
+        if path == "/projects": return self._json(200,PROJECTS.list())
+        project_match=re.fullmatch(r"/projects/([a-z0-9-]+)",path)
+        if project_match:
+            try:return self._json(200,PROJECTS.get(project_match.group(1)))
+            except (KeyError,InvalidProjectId) as exc:return self._json(404,{"error":str(exc)})
+        scenes_match=re.fullmatch(r"/projects/([a-z0-9-]+)/scenes",path)
+        if scenes_match:
+            try:return self._json(200,PROJECTS.list_scenes(scenes_match.group(1)))
+            except (KeyError,InvalidProjectId) as exc:return self._json(404,{"error":str(exc)})
+        scene_match=re.fullmatch(r"/projects/([a-z0-9-]+)/scenes/([a-z0-9-]+)",path)
+        if scene_match:
+            try:return self._json(200,PROJECTS.load_scene(*scene_match.groups()))
+            except (KeyError,InvalidProjectId) as exc:return self._json(404,{"error":str(exc)})
         if path == "/hardware": return self._json(200, hardware_report())
         if path == "/profile":
             gpus = detect_nvidia_gpus(); return self._json(200, select_qwen_profile(gpus[0] if gpus else None).to_dict())
@@ -50,6 +70,10 @@ class Handler(BaseHTTPRequestHandler):
         self._json(404, {"error": "not found"})
     def do_POST(self):
         path = urlparse(self.path).path
+        if path == "/projects":
+            body=self._body()
+            try:return self._json(201,PROJECTS.create(str(body.get('name','')),str(body.get('aspectRatio','16:9'))))
+            except ValueError as exc:return self._json(400,{'error':str(exc)})
         model_match=re.fullmatch(r"/models/([A-Za-z0-9._-]+)/(accept|download|verify)",path)
         if model_match:
             model_id,action=model_match.groups()
@@ -66,6 +90,11 @@ class Handler(BaseHTTPRequestHandler):
         match = re.fullmatch(r"/jobs/([a-f0-9]+)/cancel", path)
         if match: return self._json(200, {"cancelled": JOBS.cancel(match.group(1))})
         self._json(404, {"error": "not found"})
+    def do_PUT(self):
+        path=urlparse(self.path).path;match=re.fullmatch(r"/projects/([a-z0-9-]+)/scenes/([a-z0-9-]+)",path)
+        if not match:return self._json(404,{"error":"not found"})
+        try:return self._json(200,PROJECTS.save_scene(*match.groups(),self._body()))
+        except (KeyError,ValueError,InvalidProjectId,json.JSONDecodeError) as exc:return self._json(400,{"error":str(exc)})
     def do_DELETE(self):
         path=urlparse(self.path).path;match=re.fullmatch(r"/models/([A-Za-z0-9._-]+)",path)
         if not match:return self._json(404,{"error":"not found"})

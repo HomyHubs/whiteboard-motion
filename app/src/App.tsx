@@ -1,4 +1,5 @@
 import {useEffect,useState} from 'react';
+import ProjectEditor from './ProjectEditor';
 const API='http://127.0.0.1:8765';
 type Job={id:string;kind:string;status:string;progress:number;message:string;uses_gpu:boolean};
 type Model={id:string;revision:string;download_bytes?:number;license:string;license_url?:string;requires_acceptance?:boolean;license_accepted:boolean;installed:boolean;purpose:string};
@@ -19,6 +20,7 @@ export default function App(){
  return <main><header><div><h1>Whiteboard Video</h1><p>Windows 11 local AI control panel</p></div><span className={connected?'ok':'bad'}>{connected?'Backend online':'Backend offline'}</span></header>
  {error&&<div className="alert">{error}<br/>Chạy: <code>python -m backend.cli serve</code></div>}{notice&&<div className="notice">{notice}</div>}
  <section className="grid"><article><h2>Hardware</h2><pre>{JSON.stringify(hardware,null,2)}</pre></article><article><h2>Qwen profile</h2><pre>{JSON.stringify(profile,null,2)}</pre></article></section>
+ <ProjectEditor/>
  <section><h2>Model Manager</h2><div className="cards">{models.map(m=><div className="model" key={m.id}><div className="row"><b>{m.id}</b><span className={m.installed?'tag installed':'tag'}>{m.installed?'Installed':'Not installed'}</span></div><small>{m.purpose} · {bytes(m.download_bytes)}</small><small>Revision: <code>{m.revision.slice(0,12)}</code></small><small>{m.license_url?<a href={m.license_url} target="_blank">{m.license}</a>:m.license}</small><div className="buttons">{m.requires_acceptance&&!m.license_accepted&&<button onClick={()=>accept(m)}>Accept license</button>}<button disabled={m.installed||downloading(m.id)||(!!m.requires_acceptance&&!m.license_accepted)} onClick={()=>download(m)}>{downloading(m.id)?'Downloading…':'Download'}</button><button disabled={!m.installed} onClick={()=>verify(m)}>Verify</button><button className="danger" disabled={!m.installed} onClick={()=>remove(m)}>Delete</button></div></div>)}</div></section>
  <section><div className="row"><h2>Jobs</h2><div><button onClick={()=>start(false)}>Test CPU job</button> <button onClick={()=>start(true)}>Test GPU job</button></div></div>{jobs.length===0?<p>Chưa có job.</p>:jobs.map(j=><div className="job" key={j.id}><div><b>{j.kind}</b> · {j.status}<small>{j.message}</small></div><progress value={j.progress} max="1"/><button disabled={['completed','failed','cancelled'].includes(j.status)} onClick={()=>cancel(j.id)}>Cancel</button></div>)}</section>
  </main>}
