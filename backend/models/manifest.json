@@ -1,0 +1,65 @@
+{
+  "schema_version": 2,
+  "models": [
+    {
+      "id": "voxcpm2",
+      "source": "huggingface",
+      "repo_id": "openbmb/VoxCPM2",
+      "revision": "32279effe8c19989596f05d353d1447f51d9e915",
+      "download_bytes": 4960731866,
+      "license": "Apache-2.0",
+      "license_url": "https://github.com/OpenBMB/VoxCPM/blob/main/LICENSE",
+      "requires_acceptance": false,
+      "purpose": "voice",
+      "optional": true
+    },
+    {
+      "id": "qwen-image-2.1",
+      "source": "huggingface",
+      "repo_id": "Qwen/Qwen-Image-2.1",
+      "revision": "d26bb61231c349cf6b7896fa83353113880e1ba3",
+      "download_bytes": 33134949561,
+      "license": "Qwen Research License - non-commercial unless separately licensed",
+      "license_url": "https://github.com/QwenLM/Qwen-Image-2.1/blob/main/LICENSE",
+      "requires_acceptance": true,
+      "purpose": "image-diffusers",
+      "optional": true,
+      "inventory": "inventory-qwen-image-2.1.json"
+    },
+    {
+      "id": "qwen-image-2.1-ncnn",
+      "source": "huggingface",
+      "repo_id": "nihui-szyl/qwen-image-ncnn",
+      "revision": "89f21845fe94168a493206d8095956095c454caa",
+      "download_bytes": 31191736629,
+      "license": "Qwen Research License - non-commercial unless separately licensed",
+      "license_url": "https://huggingface.co/nihui-szyl/qwen-image-ncnn/blob/main/LICENSE",
+      "requires_acceptance": true,
+      "purpose": "image-low-vram-model",
+      "optional": true,
+      "inventory": "inventory-qwen-image-2.1-ncnn.json",
+      "allow_patterns": [
+        "qwenimage21/processor/*",
+        "qwenimage21/text_encoder/*",
+        "qwenimage21/vision/*",
+        "qwenimage21/transformer/*",
+        "qwenimage21/vae/*",
+        "LICENSE",
+        "README.md"
+      ]
+    },
+    {
+      "id": "qwenimage-ncnn-windows-runtime",
+      "source": "archive",
+      "url": "https://github.com/nihui/qwenimage-ncnn-vulkan/releases/download/20260928/qwenimage-ncnn-vulkan-20260928-windows.zip",
+      "revision": "20260928",
+      "download_bytes": 5070843,
+      "sha256": "8034bd25a7b467a37f2bd1dc0c405ca95d7366ff2b6870898e4d977c811c018d",
+      "license": "Apache-2.0",
+      "license_url": "https://github.com/nihui/qwenimage-ncnn-vulkan/blob/master/LICENSE",
+      "requires_acceptance": false,
+      "purpose": "image-low-vram-runtime",
+      "optional": true
+    }
+  ]
+}

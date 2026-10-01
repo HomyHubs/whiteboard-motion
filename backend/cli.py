@@ -1,0 +1,36 @@
+from __future__ import annotations
+import argparse, json
+from pathlib import Path
+from .hardware import detect_nvidia_gpus, print_report
+from .profiles import select_qwen_profile
+from .models import ModelManager
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(prog="whiteboard-backend")
+    sub = parser.add_subparsers(dest="command", required=True)
+    sub.add_parser("hardware")
+    sub.add_parser("profile")
+    serve = sub.add_parser("serve"); serve.add_argument("--host", default="127.0.0.1"); serve.add_argument("--port", type=int, default=8765)
+    models = sub.add_parser("models")
+    models_sub = models.add_subparsers(dest="action", required=True)
+    models_sub.add_parser("list")
+    download = models_sub.add_parser("download"); download.add_argument("id")
+    accept = models_sub.add_parser("accept"); accept.add_argument("id")
+    verify = models_sub.add_parser("verify"); verify.add_argument("id")
+    remove = models_sub.add_parser("remove"); remove.add_argument("id")
+    args = parser.parse_args(argv)
+    if args.command == "hardware": print_report(); return 0
+    if args.command == "profile":
+        gpus = detect_nvidia_gpus(); print(json.dumps(select_qwen_profile(gpus[0] if gpus else None).to_dict(), ensure_ascii=False, indent=2)); return 0
+    if args.command == "serve":
+        from .server import main as serve_main
+        return serve_main(["--host", args.host, "--port", str(args.port)])
+    manager = ModelManager()
+    if args.action == "list": print(json.dumps(manager.list_status(), ensure_ascii=False, indent=2)); return 0
+    if args.action == "download": print(manager.download(args.id)); return 0
+    if args.action == "accept": print(manager.accept_license(args.id)); return 0
+    if args.action == "verify": print(json.dumps(manager.verify(args.id), ensure_ascii=False, indent=2)); return 0
+    if args.action == "remove": manager.remove(args.id); return 0
+    return 1
+
+if __name__ == "__main__": raise SystemExit(main())

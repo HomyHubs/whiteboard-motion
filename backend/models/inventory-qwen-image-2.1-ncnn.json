@@ -1,0 +1,122 @@
+{
+  "id": "nihui-szyl/qwen-image-ncnn",
+  "sha": "89f21845fe94168a493206d8095956095c454caa",
+  "gated": false,
+  "siblings": [
+    {
+      "rfilename": ".gitattributes",
+      "size": 1595,
+      "sha256": null
+    },
+    {
+      "rfilename": "LICENSE",
+      "size": 7831,
+      "sha256": null
+    },
+    {
+      "rfilename": "README.md",
+      "size": 1745,
+      "sha256": null
+    },
+    {
+      "rfilename": "config.json",
+      "size": 268,
+      "sha256": null
+    },
+    {
+      "rfilename": "qwenimage21/controlnet/controlnet.ncnn.bin",
+      "size": 7550968400,
+      "sha256": "bb2cceda8073cdaa51534e37ba328a21e1a5cdca9d8b1e20c9572d8efebf2cb4"
+    },
+    {
+      "rfilename": "qwenimage21/controlnet/controlnet.ncnn.param",
+      "size": 41794,
+      "sha256": null
+    },
+    {
+      "rfilename": "qwenimage21/processor/merges.txt",
+      "size": 1671853,
+      "sha256": null
+    },
+    {
+      "rfilename": "qwenimage21/processor/vocab.txt",
+      "size": 1521126,
+      "sha256": null
+    },
+    {
+      "rfilename": "qwenimage21/text_encoder/text_encoder.ncnn.bin",
+      "size": 15137412084,
+      "sha256": "19c7bc6511ace26bfb6012347a497ae8b8d97ffbea8d888a87cecbba7324c46d"
+    },
+    {
+      "rfilename": "qwenimage21/text_encoder/text_encoder.ncnn.param",
+      "size": 99131,
+      "sha256": null
+    },
+    {
+      "rfilename": "qwenimage21/transformer/blocks.ncnn.bin",
+      "size": 13958677376,
+      "sha256": "52f4b35dad9fbfce180b5adf301b1a656db252f2e7bdef0806393591a85cbbe3"
+    },
+    {
+      "rfilename": "qwenimage21/transformer/blocks.ncnn.param",
+      "size": 108829,
+      "sha256": null
+    },
+    {
+      "rfilename": "qwenimage21/transformer/input.ncnn.bin",
+      "size": 237519384,
+      "sha256": "c36f22f4b0038cc89bb2d677d1e296f998ff718f5d8e07ac0a1531d0681fe934"
+    },
+    {
+      "rfilename": "qwenimage21/transformer/input.ncnn.param",
+      "size": 1878,
+      "sha256": null
+    },
+    {
+      "rfilename": "qwenimage21/transformer/output.ncnn.bin",
+      "size": 34078728,
+      "sha256": "319b75bc130216ac863794651d152c89bfa42d9c9a143a110d79cbae2ba66b68"
+    },
+    {
+      "rfilename": "qwenimage21/transformer/output.ncnn.param",
+      "size": 596,
+      "sha256": null
+    },
+    {
+      "rfilename": "qwenimage21/vae/decoder.ncnn.bin",
+      "size": 506263832,
+      "sha256": "3e8a4a3e1779baea3ca2a54773749cd26ea4ce63134724f31a4e89dae0bb9c06"
+    },
+    {
+      "rfilename": "qwenimage21/vae/decoder.ncnn.param",
+      "size": 15848,
+      "sha256": null
+    },
+    {
+      "rfilename": "qwenimage21/vae/encoder.ncnn.bin",
+      "size": 155895416,
+      "sha256": "e78396730feef0de57beddc31701176e8fa3e75f0190e314afb1222ae8a7e8ea"
+    },
+    {
+      "rfilename": "qwenimage21/vae/encoder.ncnn.param",
+      "size": 6923,
+      "sha256": null
+    },
+    {
+      "rfilename": "qwenimage21/vision/vision_encoder.ncnn.bin",
+      "size": 1147777928,
+      "sha256": "0b913627e74cc7cbef7760af01a105d6c6cf6e1726469fb150415a4c78093cba"
+    },
+    {
+      "rfilename": "qwenimage21/vision/vision_encoder.ncnn.param",
+      "size": 59289,
+      "sha256": null
+    },
+    {
+      "rfilename": "qwenimage21/vision/vision_pos_embed.f32",
+      "size": 10616832,
+      "sha256": "50558c7b01a2349b5840754dd0c9bf3deeac21600e9b26a458b1aaa4879a6c5a"
+    }
+  ]
+}
