@@ -4,6 +4,14 @@
 - P1.6–P1.9 vẫn chờ report từ GPU thật.
 - Không có task code đang thực thi.
 
+## Hai task vừa hoàn thành — P2.2 và P2.3
+- Windows Credential Manager adapter dùng `CredWriteW`, `CredReadW`, `CredDeleteW`; không lưu key trong project/config.
+- CLI `credentials set/check/delete`; lệnh set dùng hidden `getpass`.
+- Provider config chỉ lưu endpoint, model và credential target.
+- Adapter/mapping riêng cho OpenAI-compatible/Together, Stability AI v2 và Replicate prediction polling.
+- Giữ `ApiImageProvider` làm compatibility alias cho code cũ.
+- Thêm config mẫu và `docs/IMAGE_API_PROVIDERS.md`.
+
 ## Hai task vừa hoàn thành — P1.10 và P1.11
 - Pipeline ghép PNG RGBA lên canvas kem, tính alpha bounds và sinh annotation theo sequence/timeline.
 - Kiểm tra asset vượt canvas, asset hoàn toàn trong suốt và cảnh báo overlap.
@@ -27,7 +35,7 @@
 - P4.1 cũng hoàn thành ở mức source shell; frontend production build đã chạy thành công.
 
 ## Kiểm tra gần nhất
-- 22 Python unit tests thành công, gồm job queue, profile, benchmark, prompt parsing và RGBA composition.
+- 29 Python unit tests thành công, gồm job queue, profile, benchmark, prompt/RGBA, credential store và API response mapping.
 - Benchmark harness tạo report JSON với GPU/driver/RAM, revision, elapsed time, peak VRAM, utilization, temperature và output SHA-256.
 - GitHub workflow thủ công đã sẵn sàng cho self-hosted runner gắn nhãn `rtx-4060` hoặc `rtx-5060`.
 - Source đã đồng bộ lên `HomyHubs/whiteboard-motion`, commit hiện tại `317280b82dd22708e82d146138b74d0b55b1aca1`.

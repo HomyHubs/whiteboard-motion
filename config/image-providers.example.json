@@ -1,0 +1,7 @@
+{
+  "providers": [
+    {"id":"openai","kind":"openai-compatible","endpoint":"https://api.openai.com/v1/images/generations","model":"gpt-image-1","credential_target":"WhiteboardVideo/image-api/openai"},
+    {"id":"stability","kind":"stability","endpoint":"https://api.stability.ai/v2beta/stable-image/generate/core","model":"","credential_target":"WhiteboardVideo/image-api/stability"},
+    {"id":"replicate-qwen","kind":"replicate","endpoint":"https://api.replicate.com/v1/models/OWNER/MODEL/predictions","model":"OWNER/MODEL","credential_target":"WhiteboardVideo/image-api/replicate"}
+  ]
+}

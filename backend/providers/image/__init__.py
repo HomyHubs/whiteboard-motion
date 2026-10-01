@@ -1,5 +1,9 @@
 from .qwen_local import QwenImage21LocalProvider
 from .qwen_ncnn import QwenImage21NcnnProvider
 from .factory import create_qwen_provider
-from .api import ApiImageProvider
-__all__ = ["QwenImage21LocalProvider","QwenImage21NcnnProvider","create_qwen_provider","ApiImageProvider"]
+from .api import (ApiImageProvider,ApiProviderConfig,ImageApiProvider,
+                  OpenAICompatibleImageProvider,StabilityImageProvider,
+                  ReplicateImageProvider,create_api_provider)
+__all__=["QwenImage21LocalProvider","QwenImage21NcnnProvider","create_qwen_provider",
+"ApiImageProvider","ApiProviderConfig","ImageApiProvider","OpenAICompatibleImageProvider",
+"StabilityImageProvider","ReplicateImageProvider","create_api_provider"]

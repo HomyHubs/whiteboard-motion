@@ -25,8 +25,8 @@ Quy ước: `[ ]` Todo · `[~]` In progress · `[x]` Done
 
 ## P2 — Image API
 - [x] P2.1 Adapter HTTP API cấu hình endpoint/model/header.
-- [ ] P2.2 Tích hợp Windows Credential Manager.
-- [ ] P2.3 Mapping response cho OpenAI-compatible và các nhà cung cấp cụ thể.
+- [x] P2.2 Tích hợp Windows Credential Manager.
+- [x] P2.3 Mapping response cho OpenAI-compatible và các nhà cung cấp cụ thể.
 - [ ] P2.4 Retry/backoff, progress và kiểm soát chi phí.
 
 ## P3 — VoxCPM2

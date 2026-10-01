@@ -11,6 +11,11 @@ def main(argv=None) -> int:
     sub.add_parser("hardware")
     sub.add_parser("profile")
     serve = sub.add_parser("serve"); serve.add_argument("--host", default="127.0.0.1"); serve.add_argument("--port", type=int, default=8765)
+    credentials = sub.add_parser("credentials")
+    cred_sub = credentials.add_subparsers(dest="credential_action", required=True)
+    cred_set=cred_sub.add_parser("set");cred_set.add_argument("provider_id")
+    cred_get=cred_sub.add_parser("check");cred_get.add_argument("provider_id")
+    cred_delete=cred_sub.add_parser("delete");cred_delete.add_argument("provider_id")
     models = sub.add_parser("models")
     models_sub = models.add_subparsers(dest="action", required=True)
     models_sub.add_parser("list")
@@ -25,6 +30,14 @@ def main(argv=None) -> int:
     if args.command == "serve":
         from .server import main as serve_main
         return serve_main(["--host", args.host, "--port", str(args.port)])
+    if args.command == "credentials":
+        import getpass
+        from .security import WindowsCredentialStore,credential_target
+        store=WindowsCredentialStore();target=credential_target(args.provider_id)
+        if args.credential_action == "set":
+            secret=getpass.getpass("API key: ");store.set(target,secret);print(f"SAVED={target}");return 0
+        if args.credential_action == "check": print(json.dumps({"target":target,"configured":bool(store.get(target))}));return 0
+        if args.credential_action == "delete": print(json.dumps({"target":target,"deleted":store.delete(target)}));return 0
     manager = ModelManager()
     if args.action == "list": print(json.dumps(manager.list_status(), ensure_ascii=False, indent=2)); return 0
     if args.action == "download": print(manager.download(args.id)); return 0
