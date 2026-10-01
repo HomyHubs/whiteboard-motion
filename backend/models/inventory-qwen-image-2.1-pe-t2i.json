@@ -1,0 +1,82 @@
+{
+  "id": "Qwen/Qwen-Image-2.1-PE-T2I",
+  "sha": "f3ed7985c788ad75b3ab7223e0c4c51e2a43545b",
+  "gated": false,
+  "siblings": [
+    {
+      "rfilename": ".gitattributes",
+      "size": 1570,
+      "sha256": null
+    },
+    {
+      "rfilename": "LICENSE",
+      "size": 7831,
+      "sha256": null
+    },
+    {
+      "rfilename": "README.md",
+      "size": 5001,
+      "sha256": null
+    },
+    {
+      "rfilename": "chat_template.jinja",
+      "size": 7756,
+      "sha256": null
+    },
+    {
+      "rfilename": "config.json",
+      "size": 2856,
+      "sha256": null
+    },
+    {
+      "rfilename": "generation_config.json",
+      "size": 204,
+      "sha256": null
+    },
+    {
+      "rfilename": "model-00001.safetensors",
+      "size": 5074583064,
+      "sha256": "4f4e6abd06ea053b2abbeab961d6846350d9f0ab815622ab38a47f3122a5936e"
+    },
+    {
+      "rfilename": "model-00002.safetensors",
+      "size": 5089028664,
+      "sha256": "578965d7a6bcd407cdddf3fdefd6803a3758a6d56c7af34b0b2bb2e7a225a762"
+    },
+    {
+      "rfilename": "model-00003.safetensors",
+      "size": 5089028760,
+      "sha256": "e72bcce3e14dff2a409f54fada37fc5268e989a976e665f2148d10406026ee71"
+    },
+    {
+      "rfilename": "model-00004.safetensors",
+      "size": 3567080680,
+      "sha256": "08dd9ac9418e12fb1cbe807cdbde678da1b921acab80843be9017a05c5fff186"
+    },
+    {
+      "rfilename": "model.safetensors.index.json",
+      "size": 62376,
+      "sha256": null
+    },
+    {
+      "rfilename": "processor_config.json",
+      "size": 1298,
+      "sha256": null
+    },
+    {
+      "rfilename": "system_prompt.txt",
+      "size": 10045,
+      "sha256": null
+    },
+    {
+      "rfilename": "tokenizer.json",
+      "size": 19989343,
+      "sha256": "87a7830d63fcf43bf241c3c5242e96e62dd3fdc29224ca26fed8ea333db72de4"
+    },
+    {
+      "rfilename": "tokenizer_config.json",
+      "size": 1166,
+      "sha256": null
+    }
+  ]
+}

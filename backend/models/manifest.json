@@ -60,6 +60,32 @@
       "requires_acceptance": false,
       "purpose": "image-low-vram-runtime",
       "optional": true
+    },
+    {
+      "id": "qwen-image-2.1-pe-t2i",
+      "source": "huggingface",
+      "repo_id": "Qwen/Qwen-Image-2.1-PE-T2I",
+      "revision": "f3ed7985c788ad75b3ab7223e0c4c51e2a43545b",
+      "download_bytes": 18839810614,
+      "license": "Qwen Research License - non-commercial unless separately licensed",
+      "license_url": "https://huggingface.co/Qwen/Qwen-Image-2.1-PE-T2I/blob/main/LICENSE",
+      "requires_acceptance": true,
+      "purpose": "prompt-enhancer",
+      "optional": true,
+      "inventory": "inventory-qwen-image-2.1-pe-t2i.json"
+    },
+    {
+      "id": "qwen-image-2.1-pe-i2i",
+      "source": "huggingface",
+      "repo_id": "Qwen/Qwen-Image-2.1-PE-I2I",
+      "revision": "72927bc08afc99b7888ceb7d7d51a12db3700bbd",
+      "download_bytes": 18839819638,
+      "license": "Qwen Research License - non-commercial unless separately licensed",
+      "license_url": "https://huggingface.co/Qwen/Qwen-Image-2.1-PE-I2I/blob/main/LICENSE",
+      "requires_acceptance": true,
+      "purpose": "prompt-enhancer",
+      "optional": true,
+      "inventory": "inventory-qwen-image-2.1-pe-i2i.json"
     }
   ]
 }

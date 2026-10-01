@@ -1,0 +1,10 @@
+{
+  "sceneId": "scene-rgba-demo",
+  "canvas": {"width": 1672, "height": 941, "background": "#F5EBD7"},
+  "storyBasis": "Ví dụ ghép các asset RGBA tách rời",
+  "sceneDurationMs": 8000,
+  "assets": [
+    {"id": "character", "path": "character.png", "x": 160, "y": 260, "sequence": 1, "label": "Nhân vật", "subtitle": "Nhân vật xuất hiện.", "reveal": {"startMs": 300, "durationMs": 3000}},
+    {"id": "umbrella", "path": "umbrella.png", "x": 760, "y": 300, "sequence": 2, "label": "Chiếc ô", "subtitle": "Sau đó là chiếc ô.", "reveal": {"startMs": 3500, "durationMs": 2500}}
+  ]
+}

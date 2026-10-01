@@ -20,8 +20,8 @@ Quy ước: `[ ]` Todo · `[~]` In progress · `[x]` Done
 - [~] P1.7 Benchmark RTX 5060 8 GB với CUDA Blackwell runtime — harness đã sẵn sàng, chờ máy thật.
 - [~] P1.8 Benchmark RTX 3060 12 GB — harness/preflight đã sẵn sàng, chờ report máy thật.
 - [~] P1.9 Benchmark RTX 5060 Ti 16 GB: 1024/1536 — Diffusers/ncnn harness đã sẵn sàng, chờ report máy người dùng.
-- [ ] P1.10 Tạo asset RGBA và tự động sinh annotation bounds.
-- [ ] P1.11 Prompt enhancer tùy chọn.
+- [x] P1.10 Tạo asset RGBA và tự động sinh annotation bounds.
+- [x] P1.11 Prompt enhancer tùy chọn.
 
 ## P2 — Image API
 - [x] P2.1 Adapter HTTP API cấu hình endpoint/model/header.
