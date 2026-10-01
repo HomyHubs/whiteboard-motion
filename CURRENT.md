@@ -3,6 +3,29 @@
 ## Đang làm
 - P1.6–P1.9 và P3.5 vẫn chờ report phần cứng thật.
 - P4.4 chờ Windows CI tạo MSI/NSIS và Agent test cài đặt trên Windows 11.
+- P4.5/P4.6/P4.7 code xong, chờ Windows CI (build + `smoke-no-gpu`) và chứng thư code signing.
+
+## Task vừa xử lý — P4.5, P4.6, P4.7
+Tiêu chí hoàn thành:
+- P4.5: installer chứa `ffmpeg/ffmpeg.exe`, `ffprobe.exe`, LICENSE/NOTICE; `/media` báo `source=bundled|env`; NVENC chỉ chọn khi encode thử thành công, lỗi runtime tự chạy lại bằng libx264.
+- P4.6: job `smoke-no-gpu` (runner `windows-2022`, không NVIDIA) PASS toàn bộ check của `tools/smoke_no_gpu.ps1`.
+- P4.7: build ký được bằng PFX/thumbprint, tag stable bắt buộc ký, draft release có installer + `SHA256SUMS.txt`; app có kiểm tra cập nhật thủ công.
+
+Đã làm:
+- `backend/media/ffmpeg.py`: tìm FFmpeg (`WHITEBOARD_FFMPEG_DIR` → cạnh sidecar → source tree → PATH), thử NVENC 2 frame, fallback libx264, `WHITEBOARD_VIDEO_ENCODER=auto|nvenc|x264`; CLI `media`, API `/media`; UI hiển thị encoder.
+- `scripts/media_tools.py`; `stream_render.py`, `merge_scenes.py`, `tts_narration.py`, `tools/voxcpm_srt.py` dùng FFmpeg bundled + encoder chung.
+- FFmpeg pin: Gyan `9.0.2-essentials_build`, SHA-256 `60f46726…47ba`, GPL-3.0-or-later; `tools/fetch_ffmpeg.py` tạo `NOTICE.txt` + `ffmpeg-bundle.json`; Tauri `bundle.resources` → `<install>\ffmpeg`, `main.rs` truyền `WHITEBOARD_FFMPEG_DIR`. Chi tiết license: `docs/FFMPEG_BUNDLE.md`.
+- Thêm bộ icon `app/src-tauri/icons` (thiếu `icons/icon.ico` là nguyên nhân khả dĩ khiến CI run `36904470333` fail ở bước Tauri build; log CI cần quyền đọc nên chưa xác nhận).
+- `tools/smoke_no_gpu.ps1` + job `smoke-no-gpu` trong `windows-installer.yml`; workflow còn chạy unit test trước khi build.
+- `tools/sign_windows.ps1`, `tools/release_version.py`, `.github/workflows/release.yml`, `backend/updates.py` (`/updates`, CLI `check-update`, nút Kiểm tra cập nhật; không tự tải/cài). Quy trình: `docs/RELEASE.md`.
+
+Kiểm tra đã chạy (Linux, không có NVIDIA, FFmpeg 7.0.2 không có NVENC):
+- 69 unit test PASS (thêm `test_media`, `test_updates`, `test_release`, `test_no_gpu`).
+- `python -m backend.cli media` → encoder `libx264`, `nvencUsable=false`; `/health`, `/media`, `/updates` trả JSON.
+- `transcode_h264` và `merge_scenes.py` encode H.264 thật bằng libx264.
+- `fetch_ffmpeg.py --archive` với archive đã tải: SHA-256 khớp, giải nén đủ file, lần hai báo up to date.
+- `npm run build` thành công; PowerShell parser không lỗi cú pháp cho 4 script `.ps1`; `sign_windows.ps1` bỏ qua khi không có cert và dừng khi `WHITEBOARD_REQUIRE_SIGNING=1`.
+- Chưa chạy: Tauri/Cargo build Windows, cài installer thật, ký thật (chưa có chứng thư).
 - Checklist **TEST HANDOFF** vẫn bắt buộc; Agent kiểm thử ghi kết quả trực tiếp vào file này.
 
 ## Task vừa xử lý — P4.3 và P4.4
@@ -150,6 +173,15 @@ Sau đó cài cả NSIS hoặc MSI trên Windows 11 sạch và kiểm tra:
 - Uninstall không xóa model/project người dùng ngoài ý muốn.
 Ghi tên installer, kích thước, SHA-256, thời gian build, log lỗi và đường dẫn artifact. P4.4 chỉ được đánh dấu Done sau khi nhóm này PASS.
 
+### G. Smoke test máy không có NVIDIA (P4.6)
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/smoke_no_gpu.ps1 -Installer "<đường dẫn>\Whiteboard Video_0.1.0_x64-setup.exe"
+```
+Chạy trên máy không có NVIDIA (CI `smoke-no-gpu` hoặc laptop iGPU/AMD). Đính kèm `benchmarks/smoke-reports/no-gpu-*.json`. Kỳ vọng `RESULT=PASS`, encoder `libx264`, FFmpeg `source=bundled|env`.
+
+### H. Release dry-run (P4.7)
+Đẩy tag prerelease `v0.1.1-rc.1` sau khi đã `python tools/release_version.py set 0.1.1-rc.1`; kiểm tra workflow Release tạo draft có `*-setup.exe`, `*.msi`, `SHA256SUMS.txt`, `FFMPEG-NOTICE.txt`. Khi có chứng thư: `Get-AuthenticodeSignature` phải `Valid`.
+
 ### Kết quả test từ Agent khác
 > Agent kiểm thử thay các dòng `PENDING`; không xóa hướng dẫn phía trên.
 
@@ -161,6 +193,8 @@ Ghi tên installer, kích thước, SHA-256, thời gian build, log lỗi và đ
 | PENDING | PENDING | Windows 11 / RTX 5060 Ti 16 GB | D. VoxCPM SRT | PENDING | PENDING | PENDING | PENDING |
 | PENDING | PENDING | Windows 11 / RTX 5060 Ti 16 GB | E. Benchmarks | PENDING | PENDING | PENDING | PENDING |
 | PENDING | PENDING | Windows 11 sạch | F. Sidecar + MSI/NSIS | PENDING | PENDING | PENDING | PENDING |
+| PENDING | PENDING | Windows, không NVIDIA | G. No-GPU smoke | PENDING | PENDING | PENDING | PENDING |
+| PENDING | PENDING | GitHub Actions | H. Release dry-run | PENDING | PENDING | PENDING | PENDING |
 
 ### Yêu cầu review sau test
 - **Blocker:** PENDING

@@ -1,0 +1,72 @@
+# P4.7 release pipeline: push tag vX.Y.Z (stable, signing REQUIRED) or vX.Y.Z-rc.N (prerelease, may be unsigned).
+# Secrets: WINDOWS_CERTIFICATE (base64 PFX), WINDOWS_CERTIFICATE_PASSWORD. See docs/RELEASE.md.
+name: Release
+on:
+  push:
+    tags: ['v*.*.*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22', cache: 'npm', cache-dependency-path: app/package-lock.json}
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Check version matches tag
+        id: version
+        shell: bash
+        run: python tools/release_version.py check --tag "$GITHUB_REF_NAME" | tee -a "$GITHUB_OUTPUT"
+      - name: Unit tests
+        run: python -m unittest discover -s backend/tests -v
+      - name: Import code-signing certificate
+        shell: powershell
+        env:
+          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+        run: |
+          if ($env:WINDOWS_CERTIFICATE) {
+            $pfx = Join-Path $env:RUNNER_TEMP "codesign.pfx"
+            [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE))
+            "WINDOWS_CERTIFICATE_FILE=$pfx" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+          } elseif ("${{ steps.version.outputs.PRERELEASE }}" -ne "true") {
+            throw "Stable release $env:GITHUB_REF_NAME requires the WINDOWS_CERTIFICATE secret"
+          } else { Write-Warning "Prerelease will be UNSIGNED" }
+      - name: Build signed installers
+        shell: powershell
+        env:
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+          WHITEBOARD_REQUIRE_SIGNING: ${{ steps.version.outputs.PRERELEASE == 'true' && '0' || '1' }}
+        run: powershell -ExecutionPolicy Bypass -File tools/build_windows_installer.ps1
+      - name: Verify signatures
+        shell: powershell
+        run: |
+          $files = Get-ChildItem app/src-tauri/target/release/bundle -Recurse -Include *-setup.exe, *.msi
+          $sidecar = Get-Item app/src-tauri/target/release/whiteboard-backend.exe -ErrorAction SilentlyContinue
+          if ($sidecar) { $files += $sidecar }
+          foreach ($f in $files) {
+            $s = Get-AuthenticodeSignature $f.FullName
+            Write-Host "$($f.Name): $($s.Status) $($s.SignerCertificate.Subject)"
+            if ($s.Status -ne "Valid" -and "${{ steps.version.outputs.PRERELEASE }}" -ne "true") { throw "$($f.Name) is not validly signed" }
+          }
+      - name: Remove certificate
+        if: always()
+        shell: powershell
+        run: if ($env:WINDOWS_CERTIFICATE_FILE) { Remove-Item -Force $env:WINDOWS_CERTIFICATE_FILE -ErrorAction SilentlyContinue }
+      - name: Smoke test installer (no NVIDIA GPU)
+        shell: powershell
+        run: |
+          $setup = Get-ChildItem app/src-tauri/target/release/bundle/nsis -Filter *-setup.exe | Select-Object -First 1
+          powershell -ExecutionPolicy Bypass -File tools/smoke_no_gpu.ps1 -Installer $setup.FullName
+      - name: Create draft GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          B=app/src-tauri/target/release/bundle
+          cp app/src-tauri/resources/ffmpeg/NOTICE.txt "$B/FFMPEG-NOTICE.txt"
+          FLAGS="--draft --generate-notes --title Whiteboard-Video-$GITHUB_REF_NAME"
+          if [ "${{ steps.version.outputs.PRERELEASE }}" = "true" ]; then FLAGS="$FLAGS --prerelease"; fi
+          gh release create "$GITHUB_REF_NAME" $FLAGS "$B"/nsis/*-setup.exe "$B"/msi/*.msi "$B/SHA256SUMS.txt" "$B/FFMPEG-NOTICE.txt" benchmarks/smoke-reports/*.json

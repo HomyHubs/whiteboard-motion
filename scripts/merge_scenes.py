@@ -17,9 +17,12 @@ import sys
 import tempfile
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from media_tools import encode_h264, ffmpeg_bin  # noqa: E402
+
 
 def _ffmpeg_concat_copy(inputs: list[Path], output: Path) -> bool:
-    ffmpeg = shutil.which("ffmpeg")
+    ffmpeg = ffmpeg_bin()
     if ffmpeg is None:
         return False
     with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as f:
@@ -36,14 +39,11 @@ def _ffmpeg_concat_copy(inputs: list[Path], output: Path) -> bool:
             print(f"  ffmpeg 无损拼接完成: {output}")
             return True
         print(f"  [warn] ffmpeg -c copy 失败，尝试重编码: {res.stderr.strip()[:200]}")
-        res = subprocess.run(
-            [ffmpeg, "-y", "-loglevel", "error", "-f", "concat", "-safe", "0",
-             "-i", str(list_path), "-c:v", "libx264", "-crf", "20",
-             "-pix_fmt", "yuv420p", "-vf", "scale='trunc(iw/2)*2':'trunc(ih/2)*2'", str(output)],
-            capture_output=True, text=True,
-        )
-        if res.returncode == 0:
-            print(f"  ffmpeg 重编码拼接完成: {output}")
+        res, encoder = encode_h264(lambda ff, enc: [
+            ff, "-y", "-loglevel", "error", "-f", "concat", "-safe", "0",
+            "-i", str(list_path), *enc, "-vf", "scale='trunc(iw/2)*2':'trunc(ih/2)*2'", str(output)])
+        if res is not None and res.returncode == 0:
+            print(f"  ffmpeg 重编码拼接完成({encoder}): {output}")
             return True
         print(f"  [warn] ffmpeg 重编码也失败: {res.stderr.strip()[:200]}")
         return False

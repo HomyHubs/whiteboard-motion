@@ -15,5 +15,8 @@ Remove-Item -Recurse -Force -ErrorAction SilentlyContinue build\whiteboard-backe
   --exclude-module transformers --exclude-module voxcpm backend_sidecar.py
 $Target = Join-Path $Root "app\src-tauri\binaries\whiteboard-backend-x86_64-pc-windows-msvc.exe"
 Copy-Item -Force (Join-Path $Root "dist\whiteboard-backend.exe") $Target
+powershell -ExecutionPolicy Bypass -File (Join-Path $Root "tools\sign_windows.ps1") $Target
+if ($LASTEXITCODE -ne 0) { throw "Signing sidecar failed" }
 Write-Host "SIDECAR=$Target"
 & $Target --help
+if ($LASTEXITCODE -ne 0) { throw "Sidecar --help failed" }

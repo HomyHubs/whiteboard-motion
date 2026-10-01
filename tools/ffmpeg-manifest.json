@@ -1,0 +1,24 @@
+{
+  "id": "ffmpeg-windows-x64",
+  "version": "9.0.2",
+  "build": "9.0.2-essentials_build-www.gyan.dev",
+  "url": "https://github.com/GyanD/codexffmpeg/releases/download/9.0.2/ffmpeg-9.0.2-essentials_build.zip",
+  "sha256": "60f467265b1e312373dbcd92200c2618a74850f98d3d078e94296bb3fa2047ba",
+  "sizeBytes": 114768076,
+  "archiveRoot": "ffmpeg-9.0.2-essentials_build",
+  "files": {
+    "bin/ffmpeg.exe": "ffmpeg.exe",
+    "bin/ffprobe.exe": "ffprobe.exe",
+    "LICENSE": "LICENSE.txt",
+    "README.txt": "BUILD-README.txt"
+  },
+  "license": "GPL-3.0-or-later",
+  "licenseReason": "Static build with --enable-gpl --enable-version3 (libx264, libx265, ...); bundled as separate executables invoked by subprocess, never linked into the app.",
+  "sourceCode": {
+    "ffmpeg": "https://github.com/FFmpeg/FFmpeg/commit/946fcce07b",
+    "ffmpegRelease": "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz",
+    "buildScripts": "https://www.gyan.dev/ffmpeg/builds/",
+    "libx264": "https://code.videolan.org/videolan/x264"
+  },
+  "encoders": ["h264_nvenc", "libx264"]
+}

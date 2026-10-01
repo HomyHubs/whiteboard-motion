@@ -10,6 +10,8 @@ def main(argv=None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("hardware")
     sub.add_parser("profile")
+    media = sub.add_parser("media"); media.add_argument("--prefer", choices=["auto", "nvenc", "x264"])
+    sub.add_parser("version"); sub.add_parser("check-update")
     serve = sub.add_parser("serve"); serve.add_argument("--host", default="127.0.0.1"); serve.add_argument("--port", type=int, default=8765)
     credentials = sub.add_parser("credentials")
     cred_sub = credentials.add_subparsers(dest="credential_action", required=True)
@@ -27,6 +29,15 @@ def main(argv=None) -> int:
     if args.command == "hardware": print_report(); return 0
     if args.command == "profile":
         gpus = detect_nvidia_gpus(); print(json.dumps(select_qwen_profile(gpus[0] if gpus else None).to_dict(), ensure_ascii=False, indent=2)); return 0
+    if args.command == "version":
+        from . import __version__
+        print(__version__); return 0
+    if args.command == "check-update":
+        from .updates import check_for_update
+        print(json.dumps(check_for_update(), ensure_ascii=False, indent=2)); return 0
+    if args.command == "media":
+        from .media import media_report
+        report = media_report(args.prefer); print(json.dumps(report, ensure_ascii=False, indent=2)); return 0 if report.get("ffmpeg") else 1
     if args.command == "serve":
         from .server import main as serve_main
         return serve_main(["--host", args.host, "--port", str(args.port)])

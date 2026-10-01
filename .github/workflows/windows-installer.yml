@@ -1,6 +1,18 @@
 name: Windows installer
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - 'app/**'
+      - 'backend/**'
+      - 'backend_sidecar.py'
+      - 'requirements-backend.txt'
+      - 'tools/build_*.ps1'
+      - 'tools/fetch_ffmpeg.py'
+      - 'tools/ffmpeg-manifest.json'
+      - 'tools/smoke_no_gpu.ps1'
+      - 'tools/sign_windows.ps1'
+      - '.github/workflows/windows-installer.yml'
   push:
     branches: [main]
     paths:
@@ -8,8 +20,12 @@ on:
       - 'backend/**'
       - 'backend_sidecar.py'
       - 'requirements-backend.txt'
-      - 'tools/build_*sidecar.ps1'
-      - 'tools/build_windows_installer.ps1'
+      - 'tools/build_*.ps1'
+      - 'tools/fetch_ffmpeg.py'
+      - 'tools/ffmpeg-manifest.json'
+      - 'tools/smoke_no_gpu.ps1'
+      - 'tools/sign_windows.ps1'
+      - '.github/workflows/windows-installer.yml'
 jobs:
   build:
     runs-on: windows-2022
@@ -22,16 +38,31 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with: {workspaces: app/src-tauri}
-      - name: Build backend sidecar
+      - name: Unit tests
+        run: python -m unittest discover -s backend/tests -v
+      - name: Build sidecar, bundled FFmpeg and unsigned installers
         shell: powershell
-        run: powershell -ExecutionPolicy Bypass -File tools/build_backend_sidecar.ps1
-      - name: Build Tauri installers
-        shell: powershell
-        run: |
-          cd app
-          npm ci
-          npm run tauri build
+        run: powershell -ExecutionPolicy Bypass -File tools/build_windows_installer.ps1
       - uses: actions/upload-artifact@v4
         with:
           name: whiteboard-video-windows-installers
-          path: app/src-tauri/target/release/bundle/**
+          path: |
+            app/src-tauri/target/release/bundle/nsis/*-setup.exe
+            app/src-tauri/target/release/bundle/msi/*.msi
+            app/src-tauri/target/release/bundle/SHA256SUMS.txt
+  # P4.6: GitHub-hosted Windows runners have no NVIDIA GPU, so this is the no-GPU smoke test.
+  smoke-no-gpu:
+    needs: build
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: {name: whiteboard-video-windows-installers, path: installers}
+      - name: Smoke test installer without NVIDIA GPU
+        shell: powershell
+        run: |
+          $setup = Get-ChildItem installers -Recurse -Filter *-setup.exe | Select-Object -First 1
+          powershell -ExecutionPolicy Bypass -File tools/smoke_no_gpu.ps1 -Installer $setup.FullName
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: no-gpu-smoke-report, path: benchmarks/smoke-reports/*.json}

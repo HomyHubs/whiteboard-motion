@@ -35,6 +35,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from parse_srt import parse_srt  # noqa: E402
+from media_tools import ffmpeg_bin, ffprobe_bin  # noqa: E402
+
+FFMPEG = ffmpeg_bin() or "ffmpeg"
+FFPROBE = ffprobe_bin() or "ffprobe"
 
 API_URL = "https://vbee.vn/api/v1/tts"
 CALLBACK_URL = "https://example.com/callback"  # API 要求必填，轮询模式下用占位地址
@@ -146,7 +150,7 @@ def synthesize_edge(text: str, voice: str, speed: float, out: Path) -> None:
         return
     tmp = out.with_suffix(".part.mp3")
     subprocess.run(
-        ["ffmpeg", "-y", "-loglevel", "error", "-i", str(raw), "-af", _atempo_chain(speed),
+        [FFMPEG, "-y", "-loglevel", "error", "-i", str(raw), "-af", _atempo_chain(speed),
          "-c:a", "libmp3lame", "-q:a", "2", str(tmp)],
         check=True,
     )
@@ -164,7 +168,7 @@ def download(url: str, out: Path) -> None:
 
 def probe_duration(path: Path) -> float:
     res = subprocess.run(
-        ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(path)],
+        [FFPROBE, "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(path)],
         capture_output=True, text=True, check=True,
     )
     return float(res.stdout.strip())
@@ -176,7 +180,7 @@ def trim_silence(clip: Path) -> Path:
     if not out.exists():
         sr = "silenceremove=start_periods=1:start_threshold=-40dB:start_silence={}"
         subprocess.run(
-            ["ffmpeg", "-y", "-loglevel", "error", "-i", str(clip),
+            [FFMPEG, "-y", "-loglevel", "error", "-i", str(clip),
              "-af", f"{sr.format(0.05)},areverse,{sr.format(0.1)},areverse",
              "-ar", str(SAMPLE_RATE), "-ac", "1", str(out)],
             check=True,
@@ -227,7 +231,7 @@ def build_track(cues: list[dict], clips: list[Path], output: Path, total_ms: int
     filters.append(f"{''.join(labels)}concat=n={len(labels)}:v=0:a=1[out]")
     output.parent.mkdir(parents=True, exist_ok=True)
     subprocess.run(
-        ["ffmpeg", "-y", "-loglevel", "error", *inputs,
+        [FFMPEG, "-y", "-loglevel", "error", *inputs,
          "-filter_complex", ";".join(filters), "-map", "[out]",
          "-c:a", "aac", "-b:a", "192k", str(output)],
         check=True,
@@ -265,7 +269,7 @@ def write_srt(cues: list[dict], path: Path) -> None:
 
 def mux(video: Path, audio: Path, output: Path) -> None:
     subprocess.run(
-        ["ffmpeg", "-y", "-loglevel", "error", "-i", str(video), "-i", str(audio),
+        [FFMPEG, "-y", "-loglevel", "error", "-i", str(video), "-i", str(audio),
          "-map", "0:v:0", "-map", "1:a:0", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
          "-t", f"{probe_duration(video):.3f}", "-movflags", "+faststart", str(output)],
         check=True,
@@ -317,7 +321,7 @@ def main(argv=None) -> int:
             return 1
         # .env 的 TTS_VOICE 可能是 Vbee voice_code，仅在形如 Edge 声音名时沿用
         voice = args.voice or (env_voice if env_voice.endswith("Neural") else EDGE_DEFAULT_VOICE)
-    if not shutil.which("ffmpeg") or not shutil.which("ffprobe"):
+    if not (shutil.which(FFMPEG) or Path(FFMPEG).is_file()) or not (shutil.which(FFPROBE) or Path(FFPROBE).is_file()):
         print("[err] 需要系统 ffmpeg / ffprobe", file=sys.stderr)
         return 1
     if not 0.1 <= args.speed <= 1.9:

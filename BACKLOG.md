@@ -42,9 +42,9 @@ Quy ước: `[ ]` Todo · `[~]` In progress · `[x]` Done
 - [x] P4.2 Model Manager UI: dung lượng, license, download, verify, delete.
 - [x] P4.3 Project/scene editor và tích hợp `assets/preview.html`.
 - [~] P4.4 Installer Windows 11 và Python sidecar — source/build pipeline hoàn thành, chờ Windows artifact smoke test.
-- [ ] P4.5 Bundle FFmpeg phù hợp license; NVENC + libx264 fallback.
-- [ ] P4.6 Smoke test trên máy không có NVIDIA GPU.
-- [ ] P4.7 Ký code và quy trình release/update.
+- [~] P4.5 Bundle FFmpeg phù hợp license; NVENC + libx264 fallback — code/test xong (FFmpeg 9.0.2 GPLv3 pin SHA-256, chọn NVENC có kiểm thử, fallback libx264), chờ Windows CI xác nhận installer chứa FFmpeg.
+- [~] P4.6 Smoke test trên máy không có NVIDIA GPU — script + job CI `smoke-no-gpu` sẵn sàng, chờ lần chạy PASS đầu tiên.
+- [~] P4.7 Ký code và quy trình release/update — pipeline ký/release/update check xong, chờ chứng thư code signing và tag phát hành đầu tiên.
 
 ## P5 — An toàn và phát hành
 - [ ] P5.1 Màn hình consent voice clone và audit metadata.

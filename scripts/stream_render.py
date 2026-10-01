@@ -1615,23 +1615,17 @@ def transcode_h264(src: Path, dst: Path) -> Path:
       2. PyAV（纯 pip 安装，无需系统 ffmpeg；编码效率稍逊，用 CRF=28 控制体积）
       3. 两者都没有：保留原始 mp4v 编码并告警
     """
-    # 路径1：系统 ffmpeg（推荐，体积最优）
-    ffmpeg = shutil.which("ffmpeg")
-    if ffmpeg is not None:
-        cmd = [
-            ffmpeg, "-y", "-loglevel", "error",
-            "-i", str(src),
-            "-c:v", "libx264",
-            "-crf", "20",
-            "-pix_fmt", "yuv420p",
-            str(dst),
-        ]
-        res = subprocess.run(cmd, capture_output=True, text=True)
+    # 路径1：ffmpeg（打包版/系统版；h264_nvenc 可用则优先，失败自动回退 libx264）
+    if str(Path(__file__).resolve().parent) not in sys.path:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from media_tools import encode_h264
+    res, encoder = encode_h264(lambda ff, enc: [ff, "-y", "-loglevel", "error", "-i", str(src), *enc, str(dst)])
+    if res is not None:
         if res.returncode == 0:
             src.unlink(missing_ok=True)
-            print(f"  H.264 转码完成(ffmpeg): {dst}")
+            print(f"  H.264 转码完成(ffmpeg {encoder}): {dst}")
             return dst
-        print(f"  [warn] ffmpeg 转码失败: {res.stderr.strip()}")
+        print(f"  [warn] ffmpeg 转码失败: {res.stderr.strip()[-300:]}")
 
     # 路径2：PyAV（备选，纯 pip 安装）
     try:

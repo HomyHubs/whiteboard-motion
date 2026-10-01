@@ -35,3 +35,7 @@ benchmarks/voice-reports/*.json
 build/
 dist/
 app/src-tauri/binaries/*.exe
+# Bundled FFmpeg staged by tools/fetch_ffmpeg.py (not committed)
+app/src-tauri/resources/ffmpeg/
+vendor/ffmpeg/
+benchmarks/smoke-reports/*.json

@@ -9,6 +9,15 @@ from .models import ModelManager
 from .projects import ProjectStore,InvalidProjectId
 from .jobs import JobManager
 from .services import submit_model_download
+from .media import media_report
+from .updates import check_for_update
+from . import __version__
+
+_MEDIA: dict | None = None
+def cached_media_report(refresh: bool = False) -> dict:
+    global _MEDIA
+    if _MEDIA is None or refresh: _MEDIA = media_report()
+    return _MEDIA
 
 JOBS = JobManager()
 MODELS = ModelManager()
@@ -44,7 +53,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self): self._json(204, {})
     def do_GET(self):
         path = urlparse(self.path).path
-        if path == "/health": return self._json(200, {"ok": True})
+        if path == "/health": return self._json(200, {"ok": True, "version": __version__})
+        if path == "/updates": return self._json(200, check_for_update())
         if path == "/preview": return self._raw(200,(ROOT/'assets'/'preview.html').read_bytes(),'text/html; charset=utf-8')
         if path == "/projects": return self._json(200,PROJECTS.list())
         project_match=re.fullmatch(r"/projects/([a-z0-9-]+)",path)
@@ -62,6 +72,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/hardware": return self._json(200, hardware_report())
         if path == "/profile":
             gpus = detect_nvidia_gpus(); return self._json(200, select_qwen_profile(gpus[0] if gpus else None).to_dict())
+        if path == "/media": return self._json(200, cached_media_report("refresh=1" in urlparse(self.path).query))
         if path == "/models": return self._json(200, MODELS.list_status())
         if path == "/jobs": return self._json(200, [job.to_dict() for job in JOBS.list()])
         match = re.fullmatch(r"/jobs/([a-f0-9]+)", path)
