@@ -1,0 +1,13 @@
+# Core model management
+huggingface-hub>=0.27
+Pillow>=10
+soundfile>=0.12
+
+# Install ONE matching PyTorch build separately (Windows CUDA Standard or Blackwell).
+# Local voice:
+# voxcpm>=0.2
+# Local image (pin tested versions before release):
+# torch>=2.5
+# transformers>=5.17
+# diffusers (Qwen-Image-2.1 capable revision)
+# accelerate

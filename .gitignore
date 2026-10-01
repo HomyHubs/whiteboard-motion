@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# 本地产物（成片体积大，不入库；banana 示例视频保留）
+*.mp4
+!examples/scene-01-monkey-mountain-banana-whiteboard.mp4
+*.mp3
+# 密钥
+.env
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Local project assets (not committed)
+assets/whiteboard/dien-thoai-cham/
+
+# Desktop backend local artifacts
+models/
+.cache/
+*.part
+build-desktop/
+dist-desktop/
+app/node_modules/
+app/dist/
+app/src-tauri/target/
+benchmarks/outputs/
+benchmarks/reports/*.json
