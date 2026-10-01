@@ -6,7 +6,7 @@ on:
         description: GPU runner
         required: true
         type: choice
-        options: [rtx-4060, rtx-5060]
+        options: [rtx-3060, rtx-4060, rtx-5060, rtx-5060ti]
       steps:
         description: Denoise steps
         required: true
@@ -32,3 +32,24 @@ jobs:
         run: python tools/benchmark_qwen.py --expected-gpu "RTX 5060" --sizes 768x768 1024x1024 --steps ${{ inputs.steps }}
       - uses: actions/upload-artifact@v4
         with: {name: benchmark-rtx5060, path: benchmarks/reports/*.json}
+
+  benchmark-3060:
+    if: inputs.target == 'rtx-3060'
+    runs-on: [self-hosted, Windows, X64, rtx-3060]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run benchmark
+        shell: powershell
+        run: python tools/benchmark_qwen.py --expected-gpu "RTX 3060" --backend ncnn-vulkan --sizes 768x768 1024x1024 --steps ${{ inputs.steps }}
+      - uses: actions/upload-artifact@v4
+        with: {name: benchmark-rtx3060, path: benchmarks/reports/*.json}
+  benchmark-5060ti:
+    if: inputs.target == 'rtx-5060ti'
+    runs-on: [self-hosted, Windows, X64, rtx-5060ti]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Diffusers benchmark
+        shell: powershell
+        run: python tools/benchmark_qwen.py --expected-gpu "RTX 5060 Ti" --backend diffusers --sizes 1024x1024 1536x1024 --steps ${{ inputs.steps }}
+      - uses: actions/upload-artifact@v4
+        with: {name: benchmark-rtx5060ti, path: benchmarks/reports/*.json}

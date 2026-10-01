@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 import argparse, hashlib, json, platform, shutil, subprocess, sys, threading, time
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -63,6 +63,14 @@ def parse_sizes(values:list[str])->list[tuple[int,int]]:
         output.append((w,h))
     return output
 
+def with_backend(profile,backend:str):
+    if backend=='auto':return profile
+    return replace(profile,backend=backend,notes=profile.notes+f' Backend override: {backend}.')
+
+def preflight(profile,manager:ModelManager)->dict:
+    ids=['qwen-image-2.1'] if profile.backend=='diffusers' else ['qwen-image-2.1-ncnn','qwenimage-ncnn-windows-runtime']
+    return {'backend':profile.backend,'requiredModels':[{'id':x,'installed':manager.is_installed(x),'licenseAccepted':manager.is_license_accepted(x)} for x in ids]}
+
 def main(argv=None)->int:
     p=argparse.ArgumentParser(description='Benchmark Qwen-Image-2.1 local backend on Windows/NVIDIA')
     p.add_argument('--sizes',nargs='+',default=['768x768','1024x1024'])
@@ -70,6 +78,8 @@ def main(argv=None)->int:
     p.add_argument('--seed',type=int,default=42)
     p.add_argument('--gpu',type=int,default=0)
     p.add_argument('--expected-gpu',help='Required case-insensitive text in GPU name, e.g. RTX 4060')
+    p.add_argument('--backend',choices=['auto','ncnn-vulkan','diffusers'],default='auto')
+    p.add_argument('--preflight-only',action='store_true')
     p.add_argument('--prompt',default='Simple whiteboard drawing of a red umbrella beside a stack of books, clean dark pencil outlines, cream paper, no text, no logo')
     p.add_argument('--output-dir',type=Path,default=ROOT/'benchmarks'/'outputs')
     p.add_argument('--report',type=Path)
@@ -78,7 +88,12 @@ def main(argv=None)->int:
     if args.gpu>=len(gpus):raise SystemExit(f'GPU index {args.gpu} unavailable; detected {len(gpus)}')
     gpu=gpus[args.gpu]
     if args.expected_gpu and args.expected_gpu.lower() not in gpu.name.lower():raise SystemExit(f'Expected {args.expected_gpu}, got {gpu.name}')
-    profile=select_qwen_profile(gpu);manager=ModelManager();provider=create_qwen_provider(profile,manager,args.gpu)
+    profile=with_backend(select_qwen_profile(gpu),args.backend);manager=ModelManager();check=preflight(profile,manager)
+    if args.preflight_only:
+        print(json.dumps({'gpu':gpu.to_dict(),'profile':profile.to_dict(),'preflight':check},ensure_ascii=False,indent=2));return 0 if all(x['installed'] and x['licenseAccepted'] for x in check['requiredModels']) else 3
+    missing=[x['id'] for x in check['requiredModels'] if not x['installed']]
+    if missing:raise SystemExit('Missing models: '+', '.join(missing))
+    provider=create_qwen_provider(profile,manager,args.gpu)
     sizes=parse_sizes(args.sizes);args.output_dir.mkdir(parents=True,exist_ok=True)
     report={
       'schemaVersion':1,'createdAt':datetime.now(timezone.utc).isoformat(),'platform':platform.platform(),

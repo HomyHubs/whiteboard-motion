@@ -18,8 +18,8 @@ Quy ước: `[ ]` Todo · `[~]` In progress · `[x]` Done
 - [x] P1.5 Backend quantized low-VRAM cho card 8 GB (GGUF/ComfyUI hoặc runtime tương đương).
 - [~] P1.6 Benchmark RTX 4060 8 GB: 768/1024, peak VRAM, thời gian — harness đã sẵn sàng, chờ máy thật.
 - [~] P1.7 Benchmark RTX 5060 8 GB với CUDA Blackwell runtime — harness đã sẵn sàng, chờ máy thật.
-- [ ] P1.8 Benchmark RTX 3060 12 GB.
-- [ ] P1.9 Benchmark RTX 5060 Ti 16 GB: 1024/1536.
+- [~] P1.8 Benchmark RTX 3060 12 GB — harness/preflight đã sẵn sàng, chờ report máy thật.
+- [~] P1.9 Benchmark RTX 5060 Ti 16 GB: 1024/1536 — Diffusers/ncnn harness đã sẵn sàng, chờ report máy người dùng.
 - [ ] P1.10 Tạo asset RGBA và tự động sinh annotation bounds.
 - [ ] P1.11 Prompt enhancer tùy chọn.
 

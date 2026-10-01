@@ -1,13 +1,14 @@
 # CURRENT
 
 ## Đang làm
-- P1.6 Benchmark RTX 4060 8 GB ở 768/1024.
-- P1.7 Benchmark RTX 5060 8 GB và xác nhận driver/Vulkan Blackwell.
-- Đồng bộ source lên `HomyHubs/whiteboard-motion` để chạy test trên Windows 11.
+- P1.6/P1.7 vẫn chờ report từ RTX 4060 và RTX 5060 thật.
+- P1.8 Chuẩn bị benchmark RTX 3060 12 GB.
+- P1.9 Chuẩn bị benchmark RTX 5060 Ti 16 GB ở 1024/1536 và so sánh Diffusers với ncnn fallback.
 
 ## Trạng thái thực thi
-- Có thể hoàn thiện benchmark harness, report schema và workflow ngay.
-- Số liệu hiệu năng thật chỉ được ghi sau khi chạy trên đúng GPU; không dùng số giả lập.
+- P1.8/P1.9: harness, preflight, PowerShell scripts và self-hosted workflows đã hoàn thành.
+- RTX 5060 Ti hỗ trợ benchmark Diffusers mặc định và ncnn fallback để so sánh.
+- Các task vẫn `[~]` cho đến khi có report từ GPU thật; không dùng số giả lập.
 
 ## Hai task vừa hoàn thành — P1.4 và P1.5
 - Pin official Qwen-Image-2.1 revision `d26bb61231c349cf6b7896fa83353113880e1ba3` với inventory 33,134,949,561 bytes.
@@ -24,7 +25,7 @@
 - P4.1 cũng hoàn thành ở mức source shell; frontend production build đã chạy thành công.
 
 ## Kiểm tra gần nhất
-- 15 Python unit tests thành công, gồm job queue, profile, license guard, ncnn validation và benchmark input validation.
+- 17 Python unit tests thành công, gồm job queue, profile, license guard, ncnn validation, backend override và benchmark preflight.
 - Benchmark harness tạo report JSON với GPU/driver/RAM, revision, elapsed time, peak VRAM, utilization, temperature và output SHA-256.
 - GitHub workflow thủ công đã sẵn sàng cho self-hosted runner gắn nhãn `rtx-4060` hoặc `rtx-5060`.
 - Source đã đồng bộ lên `HomyHubs/whiteboard-motion`, commit hiện tại `317280b82dd22708e82d146138b74d0b55b1aca1`.
