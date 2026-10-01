@@ -2,7 +2,15 @@
 
 ## Đang làm
 - P1.6–P1.9 vẫn chờ report từ GPU thật.
-- Không có task code đang thực thi.
+- P3.5 chờ report VoxCPM2 từ CPU và GPU thật.
+
+## Task vừa xử lý — P3.4 và P3.5
+- P3.4 hoàn thành: cache key gồm engine/model revision/text/language/seed/reference SHA-256/reference text/settings/format.
+- Cache restore/store atomic, kiểm tra audio SHA-256 và tự miss khi metadata/file bị đổi.
+- Streaming và non-streaming cùng dùng cache; cache hit không load hoặc gọi model.
+- P3.5 đã có harness, PowerShell scripts và self-hosted workflow cho CPU, RTX 3060/4060/5060/5060 Ti.
+- Report gồm load time, synthesis time, audio duration, RTF, peak VRAM, utilization, temperature và output SHA-256.
+- P3.5 vẫn `[~]` đến khi chạy trên phần cứng thật.
 
 ## Hai task vừa hoàn thành — P2.4 và P3.3
 - HTTP client retry lỗi tạm thời 408/409/425/429/5xx, exponential backoff, jitter và `Retry-After`.
@@ -43,7 +51,7 @@
 - P4.1 cũng hoàn thành ở mức source shell; frontend production build đã chạy thành công.
 
 ## Kiểm tra gần nhất
-- 35 Python unit tests thành công, gồm retry/cancel/cost guard và VoxCPM2 streaming cleanup.
+- 41 Python unit tests thành công, gồm audio cache corruption/invalidation, cache hit không load model và voice benchmark RTF.
 - Benchmark harness tạo report JSON với GPU/driver/RAM, revision, elapsed time, peak VRAM, utilization, temperature và output SHA-256.
 - GitHub workflow thủ công đã sẵn sàng cho self-hosted runner gắn nhãn `rtx-4060` hoặc `rtx-5060`.
 - Source đã đồng bộ lên `HomyHubs/whiteboard-motion`, commit hiện tại `317280b82dd22708e82d146138b74d0b55b1aca1`.

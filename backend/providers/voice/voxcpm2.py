@@ -3,18 +3,21 @@ from dataclasses import dataclass
 from pathlib import Path
 import threading
 from typing import Callable
+from ...cache import AudioCache,AudioCacheKey
+from ...cache.audio import file_sha256
 
 @dataclass
 class VoiceRequest:
     text:str;output:Path;language:str='vi';reference_audio:Path|None=None;reference_text:str|None=None;consent_confirmed:bool=False;seed:int=42
 @dataclass(frozen=True)
 class VoiceProgress:
-    chunks:int;samples:int;seconds:float;finished:bool=False
+    chunks:int;samples:int;seconds:float;finished:bool=False;cached:bool=False
 class VoiceGenerationCancelled(RuntimeError):pass
 
 class VoxCPM2Provider:
     SAMPLE_RATE=48000
-    def __init__(self,model_path:Path,device:str='cuda',optimize:bool=True):self.model_path,self.device,self.optimize=model_path,device,optimize;self._model=None
+    def __init__(self,model_path:Path,device:str='cuda',optimize:bool=True,cache:AudioCache|None=None,model_revision:str='unknown'):
+        self.model_path,self.device,self.optimize=model_path,device,optimize;self.cache,self.model_revision=cache,model_revision;self._model=None
     def load(self)->None:
         if self._model is not None:return
         try:from voxcpm import VoxCPM
@@ -25,14 +28,27 @@ class VoxCPM2Provider:
         kwargs={'text':request.text,'seed':request.seed}
         if request.reference_audio:kwargs.update(prompt_wav_path=str(request.reference_audio),prompt_text=request.reference_text or '')
         return kwargs
+    def _cache_key(self,request:VoiceRequest)->AudioCacheKey:
+        return AudioCacheKey('voxcpm2',self.model_revision,request.text,request.language,request.seed,file_sha256(request.reference_audio),request.reference_text or '',{'optimize':self.optimize},request.output.suffix.lower().lstrip('.') or 'wav')
     def synthesize(self,request:VoiceRequest)->Path:
-        self.load();audio=self._model.generate(**self._kwargs(request))
+        kwargs=self._kwargs(request);key=self._cache_key(request)
+        if self.cache and self.cache.restore(key,request.output):return request.output
+        self.load();audio=self._model.generate(**kwargs)
         try:import soundfile as sf
         except ImportError as exc:raise RuntimeError('Thiếu soundfile') from exc
-        request.output.parent.mkdir(parents=True,exist_ok=True);sf.write(str(request.output),audio,self.SAMPLE_RATE);return request.output
+        request.output.parent.mkdir(parents=True,exist_ok=True);sf.write(str(request.output),audio,self.SAMPLE_RATE)
+        if self.cache:self.cache.store(key,request.output,{'samples':len(audio),'sample_rate':self.SAMPLE_RATE})
+        return request.output
     def synthesize_streaming(self,request:VoiceRequest,cancel_event:threading.Event|None=None,on_progress:Callable[[VoiceProgress],None]|None=None,check_cancelled:Callable[[],None]|None=None)->Path:
         if request.output.suffix.lower() not in {'.wav','.wave'}:raise ValueError('Streaming output must be WAV')
-        self.load();kwargs=self._kwargs(request)
+        kwargs=self._kwargs(request);key=self._cache_key(request)
+        if self.cache:
+            metadata=self.cache.restore(key,request.output)
+            if metadata:
+                samples=int(metadata.get('samples',0));progress=VoiceProgress(0,samples,samples/self.SAMPLE_RATE,True,True)
+                if on_progress:on_progress(progress)
+                return request.output
+        self.load()
         try:import numpy as np;import soundfile as sf
         except ImportError as exc:raise RuntimeError('Streaming requires numpy and soundfile') from exc
         def check():
@@ -47,10 +63,11 @@ class VoxCPM2Provider:
                     array=np.asarray(chunk,dtype=np.float32).reshape(-1)
                     if not array.size:continue
                     writer.write(array);chunks+=1;samples+=int(array.size)
-                    if on_progress:on_progress(VoiceProgress(chunks,samples,samples/self.SAMPLE_RATE,False))
+                    if on_progress:on_progress(VoiceProgress(chunks,samples,samples/self.SAMPLE_RATE,False,False))
                 check()
             part.replace(request.output)
-            if on_progress:on_progress(VoiceProgress(chunks,samples,samples/self.SAMPLE_RATE,True))
+            if self.cache:self.cache.store(key,request.output,{'samples':samples,'sample_rate':self.SAMPLE_RATE,'chunks':chunks})
+            if on_progress:on_progress(VoiceProgress(chunks,samples,samples/self.SAMPLE_RATE,True,False))
             return request.output
         except BaseException:
             part.unlink(missing_ok=True);request.output.unlink(missing_ok=True);raise

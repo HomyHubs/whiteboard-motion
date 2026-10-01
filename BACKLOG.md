@@ -33,8 +33,8 @@ Quy ước: `[ ]` Todo · `[~]` In progress · `[x]` Done
 - [x] P3.1 Provider cơ bản cho TTS và voice clone.
 - [x] P3.2 Voice profile + xác nhận consent.
 - [x] P3.3 Streaming generation và cancel.
-- [ ] P3.4 Cache audio theo model/reference/text/settings.
-- [ ] P3.5 Benchmark CPU, RTX 3060/4060/5060/5060 Ti.
+- [x] P3.4 Cache audio theo model/reference/text/settings.
+- [~] P3.5 Benchmark CPU, RTX 3060/4060/5060/5060 Ti — harness/workflow đã sẵn sàng, chờ report máy thật.
 - [ ] P3.6 Timeline/SRT integration với pipeline hiện tại.
 
 ## P4 — Desktop/Packaging

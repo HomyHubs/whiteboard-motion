@@ -1,0 +1,54 @@
+name: VoxCPM2 benchmark
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        required: true
+        type: choice
+        options: [cpu, rtx-3060, rtx-4060, rtx-5060, rtx-5060ti]
+jobs:
+  cpu:
+    if: inputs.target == 'cpu'
+    runs-on: [self-hosted, Windows, X64, cpu-benchmark]
+    steps: &steps_cpu
+      - uses: actions/checkout@v4
+      - shell: powershell
+        run: python tools/benchmark_voxcpm.py --device cpu
+      - uses: actions/upload-artifact@v4
+        with: {name: voxcpm-cpu, path: benchmarks/voice-reports/*.json}
+  rtx-3060:
+    if: inputs.target == 'rtx-3060'
+    runs-on: [self-hosted, Windows, X64, rtx-3060]
+    steps:
+      - uses: actions/checkout@v4
+      - shell: powershell
+        run: python tools/benchmark_voxcpm.py --device cuda --expected-gpu "RTX 3060"
+      - uses: actions/upload-artifact@v4
+        with: {name: voxcpm-rtx3060, path: benchmarks/voice-reports/*.json}
+  rtx-4060:
+    if: inputs.target == 'rtx-4060'
+    runs-on: [self-hosted, Windows, X64, rtx-4060]
+    steps:
+      - uses: actions/checkout@v4
+      - shell: powershell
+        run: python tools/benchmark_voxcpm.py --device cuda --expected-gpu "RTX 4060"
+      - uses: actions/upload-artifact@v4
+        with: {name: voxcpm-rtx4060, path: benchmarks/voice-reports/*.json}
+  rtx-5060:
+    if: inputs.target == 'rtx-5060'
+    runs-on: [self-hosted, Windows, X64, rtx-5060]
+    steps:
+      - uses: actions/checkout@v4
+      - shell: powershell
+        run: python tools/benchmark_voxcpm.py --device cuda --expected-gpu "RTX 5060"
+      - uses: actions/upload-artifact@v4
+        with: {name: voxcpm-rtx5060, path: benchmarks/voice-reports/*.json}
+  rtx-5060ti:
+    if: inputs.target == 'rtx-5060ti'
+    runs-on: [self-hosted, Windows, X64, rtx-5060ti]
+    steps:
+      - uses: actions/checkout@v4
+      - shell: powershell
+        run: python tools/benchmark_voxcpm.py --device cuda --expected-gpu "RTX 5060 Ti"
+      - uses: actions/upload-artifact@v4
+        with: {name: voxcpm-rtx5060ti, path: benchmarks/voice-reports/*.json}

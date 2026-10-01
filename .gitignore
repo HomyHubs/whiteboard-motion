@@ -29,3 +29,5 @@ app/dist/
 app/src-tauri/target/
 benchmarks/outputs/
 benchmarks/reports/*.json
+benchmarks/voice-outputs/
+benchmarks/voice-reports/*.json

@@ -3,6 +3,7 @@ from pathlib import Path
 from unittest.mock import patch
 import numpy as np
 from backend.providers.voice import VoxCPM2Provider,VoiceRequest,VoiceGenerationCancelled
+from backend.cache import AudioCache
 class FakeModel:
  def generate_streaming(self,**kwargs):
   yield np.ones(480,dtype=np.float32)*.1
@@ -26,5 +27,10 @@ class VoxStreamingTests(unittest.TestCase):
    def progress(value):event.set()
    with self.assertRaises(VoiceGenerationCancelled):self.provider().synthesize_streaming(VoiceRequest('hello',out),cancel_event=event,on_progress=progress)
    self.assertFalse(out.exists());self.assertFalse((Path(tmp)/'voice.part.wav').exists())
+ def test_streaming_cache_hit_skips_model(self):
+  with tempfile.TemporaryDirectory() as tmp,patch.dict(sys.modules,{'soundfile':FAKE_SF}):
+   root=Path(tmp);cache=AudioCache(root/'cache');first=self.provider();first.cache=cache;first.model_revision='rev';first.synthesize_streaming(VoiceRequest('hello',root/'a.wav'))
+   second=VoxCPM2Provider(Path('fake'),cache=cache,model_revision='rev');events=[];second.synthesize_streaming(VoiceRequest('hello',root/'b.wav'),on_progress=events.append)
+   self.assertIsNone(second._model);self.assertTrue(events[-1].cached);self.assertEqual((root/'b.wav').read_bytes(),(root/'a.wav').read_bytes())
  def test_stream_requires_wav(self):
   with self.assertRaises(ValueError):self.provider().synthesize_streaming(VoiceRequest('hello',Path('voice.mp3')))
