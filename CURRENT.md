@@ -11,6 +11,7 @@
 - P4.4 đã có PyInstaller sidecar, Tauri externalBin, PowerShell build MSI/NSIS và Windows CI artifact.
 - Sidecar bundle control plane/downloader/project API; không bundle model weights hoặc ML runtime nặng.
 - P4.4 vẫn `[~]` cho đến khi Windows artifact được cài và smoke test thành công.
+- Windows installer CI run cho commit `56ee7044bd396fe3f3e08a480f4a5c6333f1d278`: `https://github.com/HomyHubs/whiteboard-motion/actions/runs/36904470333` — trạng thái lúc ghi: `in_progress`. Agent test cập nhật conclusion/artifact vào bảng TEST HANDOFF.
 
 ## Hai task vừa hoàn thành — P3.6 và P4.2
 - VoxCPM2 tạo audio từng SRT cue bằng streaming/cache, sau đó dùng timeline/build-track/retime/mux FFmpeg hiện có.
