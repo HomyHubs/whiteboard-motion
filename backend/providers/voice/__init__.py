@@ -1,2 +1,2 @@
-from .voxcpm2 import VoxCPM2Provider, VoiceRequest
-__all__ = ["VoxCPM2Provider", "VoiceRequest"]
+from .voxcpm2 import VoxCPM2Provider,VoiceRequest,VoiceProgress,VoiceGenerationCancelled
+__all__=["VoxCPM2Provider","VoiceRequest","VoiceProgress","VoiceGenerationCancelled"]

@@ -4,6 +4,14 @@
 - P1.6–P1.9 vẫn chờ report từ GPU thật.
 - Không có task code đang thực thi.
 
+## Hai task vừa hoàn thành — P2.4 và P3.3
+- HTTP client retry lỗi tạm thời 408/409/425/429/5xx, exponential backoff, jitter và `Retry-After`.
+- Cancel hoạt động trước request, trong backoff, download và Replicate polling.
+- Image API progress stages: cost/request/backoff/download/poll/write.
+- Cost guard chặn request trước khi gọi API nếu estimate vượt budget cấu hình.
+- VoxCPM2 streaming ghi WAV 48 kHz theo chunk, báo chunks/samples/seconds và hỗ trợ job cancellation.
+- Dùng file `*.part.wav`, chỉ rename khi hoàn tất; cancel/lỗi sẽ xóa partial.
+
 ## Hai task vừa hoàn thành — P2.2 và P2.3
 - Windows Credential Manager adapter dùng `CredWriteW`, `CredReadW`, `CredDeleteW`; không lưu key trong project/config.
 - CLI `credentials set/check/delete`; lệnh set dùng hidden `getpass`.
@@ -35,7 +43,7 @@
 - P4.1 cũng hoàn thành ở mức source shell; frontend production build đã chạy thành công.
 
 ## Kiểm tra gần nhất
-- 29 Python unit tests thành công, gồm job queue, profile, benchmark, prompt/RGBA, credential store và API response mapping.
+- 35 Python unit tests thành công, gồm retry/cancel/cost guard và VoxCPM2 streaming cleanup.
 - Benchmark harness tạo report JSON với GPU/driver/RAM, revision, elapsed time, peak VRAM, utilization, temperature và output SHA-256.
 - GitHub workflow thủ công đã sẵn sàng cho self-hosted runner gắn nhãn `rtx-4060` hoặc `rtx-5060`.
 - Source đã đồng bộ lên `HomyHubs/whiteboard-motion`, commit hiện tại `317280b82dd22708e82d146138b74d0b55b1aca1`.

@@ -27,12 +27,12 @@ Quy ước: `[ ]` Todo · `[~]` In progress · `[x]` Done
 - [x] P2.1 Adapter HTTP API cấu hình endpoint/model/header.
 - [x] P2.2 Tích hợp Windows Credential Manager.
 - [x] P2.3 Mapping response cho OpenAI-compatible và các nhà cung cấp cụ thể.
-- [ ] P2.4 Retry/backoff, progress và kiểm soát chi phí.
+- [x] P2.4 Retry/backoff, progress và kiểm soát chi phí.
 
 ## P3 — VoxCPM2
 - [x] P3.1 Provider cơ bản cho TTS và voice clone.
 - [x] P3.2 Voice profile + xác nhận consent.
-- [ ] P3.3 Streaming generation và cancel.
+- [x] P3.3 Streaming generation và cancel.
 - [ ] P3.4 Cache audio theo model/reference/text/settings.
 - [ ] P3.5 Benchmark CPU, RTX 3060/4060/5060/5060 Ti.
 - [ ] P3.6 Timeline/SRT integration với pipeline hiện tại.

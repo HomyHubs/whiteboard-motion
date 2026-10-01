@@ -1,16 +1,16 @@
 import base64,json,tempfile,unittest
 from pathlib import Path
 from unittest.mock import patch
-from backend.providers.image.api import ApiProviderConfig,OpenAICompatibleImageProvider,StabilityImageProvider,_extract_image,create_api_provider
+from backend.providers.image.api import ApiProviderConfig,OpenAICompatibleImageProvider,StabilityImageProvider,CostLimitExceeded,_extract_image,create_api_provider
 from backend.security.credentials import InMemoryCredentialStore
 from backend.providers.image.base import ImageRequest
 class Response:
  def __init__(self,payload,ctype='application/json'):self.payload=payload if isinstance(payload,bytes) else json.dumps(payload).encode();self.headers={'Content-Type':ctype}
  def __enter__(self):return self
  def __exit__(self,*args):pass
- def read(self):return self.payload
+ def read(self,size=-1):payload,self.payload=self.payload,b'';return payload
 class ImageApiTests(unittest.TestCase):
- def test_mapping_base64(self):self.assertEqual(_extract_image({'data':[{'b64_json':base64.b64encode(b'png').decode()}]}),b'png')
+ def test_mapping_base64(self):self.assertEqual(_extract_image({'data':[{'b64_json':base64.b64encode(b'png').decode()}]},lambda url:b''),b'png')
  def test_factory(self):
   cfg=ApiProviderConfig('s','stability','https://example.invalid');self.assertIsInstance(create_api_provider(cfg,InMemoryCredentialStore()),StabilityImageProvider)
  def test_openai_uses_credential_store(self):
@@ -19,5 +19,9 @@ class ImageApiTests(unittest.TestCase):
    payload={'data':[{'b64_json':base64.b64encode(b'image').decode()}]}
    with patch('urllib.request.urlopen',return_value=Response(payload)):provider.generate(ImageRequest('p',out))
    self.assertEqual(out.read_bytes(),b'image')
+ def test_cost_guard_before_network(self):
+  cfg=ApiProviderConfig('o','openai','https://example.invalid','model',api_key_env='KEY',estimated_cost_per_image_usd=.1,max_cost_per_job_usd=.05)
+  with patch.dict('os.environ',{'KEY':'x'}):
+   with self.assertRaises(CostLimitExceeded):OpenAICompatibleImageProvider(cfg).generate(ImageRequest('p',Path('never.png')))
  def test_stability_multipart(self):
   body,boundary=StabilityImageProvider._multipart({'prompt':'hello'});self.assertIn(b'hello',body);self.assertIn(boundary.encode(),body)
