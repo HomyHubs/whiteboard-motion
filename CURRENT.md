@@ -187,24 +187,28 @@ Chạy trên máy không có NVIDIA (CI `smoke-no-gpu` hoặc laptop iGPU/AMD). 
 
 | Ngày | Commit SHA | Máy/OS/GPU/RAM | Nhóm | Kết quả | Exit code | Artifact/report | Ghi chú/lỗi |
 |---|---|---|---|---|---:|---|---|
-| PENDING | PENDING | Windows 11 / PENDING | A. Smoke | PENDING | PENDING | PENDING | PENDING |
-| PENDING | PENDING | Windows 11 / PENDING | B. Model Manager UI | PENDING | PENDING | PENDING | PENDING |
-| PENDING | PENDING | Windows 11 / PENDING | C. Credential Manager | PENDING | PENDING | PENDING | PENDING |
-| PENDING | PENDING | Windows 11 / RTX 5060 Ti 16 GB | D. VoxCPM SRT | PENDING | PENDING | PENDING | PENDING |
-| PENDING | PENDING | Windows 11 / RTX 5060 Ti 16 GB | E. Benchmarks | PENDING | PENDING | PENDING | PENDING |
-| PENDING | PENDING | Windows 11 sạch | F. Sidecar + MSI/NSIS | PENDING | PENDING | PENDING | PENDING |
-| PENDING | PENDING | Windows, không NVIDIA | G. No-GPU smoke | PENDING | PENDING | PENDING | PENDING |
-| PENDING | PENDING | GitHub Actions | H. Release dry-run | PENDING | PENDING | PENDING | PENDING |
+| 2026-10-02 | 38fcea6caf2f0d02e447cddc5f416d69d61ce50a | Windows 11 Pro 64-bit / RTX 5060 Ti 16 GB / 32 GB RAM | A. Smoke | PASS (với lưu ý) | 0 | 69 unit tests OK; app/dist built | 69/69 backend unit test PASS. `hardware`, `models list`, `restore_assets.ps1`, `npm run build` đều PASS. Lưu ý: `backend.cli profile` cần `-X utf8` trên Windows console cp1252 do chuỗi ghi chú chứa ký tự có dấu. |
+| 2026-10-02 | 38fcea6caf2f0d02e447cddc5f416d69d61ce50a | Windows 11 Pro 64-bit / RTX 5060 Ti 16 GB / 32 GB RAM | B. Model Manager UI | PASS | 0 | Backend serve port 8765 | `/health` (v0.1.0), `/models` (6 models), `/hardware`, `/profile` hoạt động tốt. Job demo và POST cancel trả về `cancelled`, không gây treo server. |
+| 2026-10-02 | 38fcea6caf2f0d02e447cddc5f416d69d61ce50a | Windows 11 Pro 64-bit / RTX 5060 Ti 16 GB / 32 GB RAM | C. Credential Manager | PASS | 0 | Windows Credential Manager | `WindowsCredentialStore` đọc/ghi/xóa trực tiếp qua `Advapi32.dll`. `cmdkey /list` xác nhận mục `LegacyGeneric:target=WhiteboardVideo/image-api/openai`. `backend.cli credentials check` trả `configured: true` rồi `false` sau khi delete. |
+| 2026-10-02 | 38fcea6caf2f0d02e447cddc5f416d69d61ce50a | Windows 11 / RTX 5060 Ti 16 GB | D. VoxCPM SRT | SKIPPED | - | - | Chưa tải model `voxcpm2` (~5 GB). Tuân thủ AGENTS.md: không tự ý download model weights khi người dùng chưa xác nhận. |
+| 2026-10-02 | 38fcea6caf2f0d02e447cddc5f416d69d61ce50a | Windows 11 / RTX 5060 Ti 16 GB | E. Benchmarks | SKIPPED | - | - | Phần cứng RTX 5060 Ti 16 GB và harness đã sẵn sàng; chờ tải weights `voxcpm2` và `qwen-image-2.1` để tiến hành benchmark P1.9 & P3.5. |
+| 2026-10-02 | 38fcea6caf2f0d02e447cddc5f416d69d61ce50a | Windows 11 sạch | F. Sidecar + MSI/NSIS | PARTIAL PASS | 0 (sidecar) | `app/src-tauri/binaries/whiteboard-backend-x86_64-pc-windows-msvc.exe`, FFmpeg bundle | `build_backend_sidecar.ps1` tạo binary sidecar PyInstaller thành công; binary chạy độc lập không cần Python, `/health` port 8769 trả `{"ok": true}`. `fetch_ffmpeg.py` tải và xác thực FFmpeg 9.0.2 (115 MB). Bước build Tauri installer tạm dừng do môi trường cục bộ chưa có `cargo` (chờ Windows CI). |
+| 2026-10-02 | 38fcea6caf2f0d02e447cddc5f416d69d61ce50a | Windows, không NVIDIA | G. No-GPU smoke | SKIPPED | - | - | Máy hiện tại có NVIDIA GPU RTX 5060 Ti; kịch bản dành cho môi trường không có GPU rời hoặc CI. |
+| 2026-10-02 | 38fcea6caf2f0d02e447cddc5f416d69d61ce50a | GitHub Actions | H. Release dry-run | SKIPPED | - | - | Chờ gắn tag phát hành và kích hoạt GitHub Actions workflow. |
 
 ### Yêu cầu review sau test
-- **Blocker:** PENDING
-- **Major:** PENDING
-- **Minor:** PENDING
-- **Đề xuất thay đổi:** PENDING
-- **Có thể tiếp tục task kế tiếp:** PENDING (Yes/No + lý do)
+- **Blocker:** Không có blocker logic nào trong mã nguồn.
+- **Major:** Máy phát triển hiện tại chưa cài Rust (`cargo`) nên không thể tự đóng gói Tauri NSIS/MSI cục bộ; quy trình phụ thuộc vào Windows CI runner.
+- **Minor:**
+  1. `UnicodeEncodeError`: Các lệnh `backend.cli profile` và `backend.cli check-update` gọi `print(json.dumps(..., ensure_ascii=False))` chứa ký tự tiếng Việt (`\u01b0`), gây crash trên Windows PowerShell/cmd khi stdout dùng codepage cp1252 trừ khi có `-X utf8` hoặc `PYTHONUTF8=1`.
+  2. `credentials set`: `getpass.getpass()` đọc qua Windows `msvcrt` khiến tiến trình bị treo nếu truyền dữ liệu qua pipe phi tương tác trong script tự động.
+- **Đề xuất thay đổi:**
+  1. Thêm `sys.stdout.reconfigure(encoding='utf-8')` vào đầu hàm `main()` trong `backend/cli.py` để tương thích hoàn toàn với Windows console.
+  2. Hỗ trợ truyền key qua tùy chọn `--key` hoặc biến môi trường cho lệnh `credentials set` để phục vụ CI/automated testing.
+- **Có thể tiếp tục task kế tiếp:** **Yes**. Backend (69 unit tests, credential store, hardware detection, job manager/cancellation, media report, fetch_ffmpeg, PyInstaller sidecar binary) đều hoạt động rất tốt trên Windows 11 và RTX 5060 Ti.
 
 ## Kiểm tra gần nhất
-- 47 Python unit tests thành công, gồm project path traversal/atomic write; project/preview HTTP smoke test và React build thành công.
+- 69 Python unit tests thành công trên Windows 11, gồm project path traversal/atomic write, media ffmpeg/nvenc, updates, security credential store; project/preview HTTP smoke test và React build thành công.
 - Benchmark harness tạo report JSON với GPU/driver/RAM, revision, elapsed time, peak VRAM, utilization, temperature và output SHA-256.
 - GitHub workflow thủ công đã sẵn sàng cho self-hosted runner gắn nhãn `rtx-4060` hoặc `rtx-5060`.
 - Source được đồng bộ liên tục lên `HomyHubs/whiteboard-motion`; Agent test phải ghi commit SHA thực tế trong bảng TEST HANDOFF.
