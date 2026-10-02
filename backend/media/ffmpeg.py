@@ -69,6 +69,11 @@ def _run(cmd: list[str], timeout: float = 30) -> subprocess.CompletedProcess:
 
 _ENCODERS: dict[str, set[str]] = {}
 _NVENC_OK: dict[str, bool] = {}
+_NVENC_ERR: dict[str, str] = {}
+
+def clear_cache() -> None:
+    """Forget probed encoders/NVENC state (e.g. after a driver update) so the next call re-probes FFmpeg."""
+    _ENCODERS.clear(); _NVENC_OK.clear(); _NVENC_ERR.clear()
 
 def list_encoders(ffmpeg: str) -> set[str]:
     if ffmpeg not in _ENCODERS:
@@ -90,8 +95,10 @@ def nvenc_usable(ffmpeg: str) -> bool:
                 res = _run([ffmpeg, "-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", "color=c=black:s=256x256:d=0.2",
                             "-frames:v", "2", *NVENC_ARGS, "-f", "null", "-"], timeout=20)
                 ok = res.returncode == 0
-            except (OSError, subprocess.TimeoutExpired):
-                ok = False
+                if not ok:
+                    _NVENC_ERR[ffmpeg] = (res.stderr or "").strip()[-500:]
+            except (OSError, subprocess.TimeoutExpired) as exc:
+                ok = False; _NVENC_ERR[ffmpeg] = str(exc)[-500:]
         _NVENC_OK[ffmpeg] = ok
     return _NVENC_OK[ffmpeg]
 
@@ -136,7 +143,16 @@ def ffmpeg_version(ffmpeg: str) -> dict:
     lic = "GPL-3.0-or-later" if "--enable-version3" in config and "--enable-gpl" in config else "GPL-2.0-or-later" if "--enable-gpl" in config else "LGPL"
     return {"version": first, "license": lic, "nonfree": "--enable-nonfree" in config}
 
-def media_report(prefer: str | None = None) -> dict:
+def nvenc_hint(error: str) -> str | None:
+    """Human hint for the common 'driver too old for this FFmpeg's NVENC API' failure."""
+    low = error.lower()
+    if "driver" in low and ("api" in low or "version" in low or "required" in low):
+        return "NVIDIA driver quá cũ so với NVENC API của FFmpeg đi kèm; cập nhật driver NVIDIA (FFmpeg 9.0.2 cần driver mới, đã test OK với 616.92) rồi bấm làm mới. Video vẫn xuất bằng libx264."
+    return None
+
+def media_report(prefer: str | None = None, refresh: bool = False) -> dict:
+    if refresh:
+        clear_cache()
     tools = find_ffmpeg(required=False)
     if tools is None:
         return {"ffmpeg": None, "error": "FFmpeg not found", "encoder": None}
@@ -147,4 +163,5 @@ def media_report(prefer: str | None = None) -> dict:
         selected = {"error": str(exc)}
     return {"ffmpeg": tools.ffmpeg, "ffprobe": tools.ffprobe, "source": tools.source, **ffmpeg_version(tools.ffmpeg),
             "hasLibx264": "libx264" in encoders, "hasNvencEncoder": "h264_nvenc" in encoders,
-            "nvencUsable": nvenc_usable(tools.ffmpeg), "encoder": selected}
+            "nvencUsable": nvenc_usable(tools.ffmpeg), "nvencError": _NVENC_ERR.get(tools.ffmpeg),
+            "nvencHint": nvenc_hint(_NVENC_ERR.get(tools.ffmpeg, "")), "encoder": selected}

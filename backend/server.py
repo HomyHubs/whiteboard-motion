@@ -18,7 +18,8 @@ from . import __version__
 _MEDIA: dict | None = None
 def cached_media_report(refresh: bool = False) -> dict:
     global _MEDIA
-    if _MEDIA is None or refresh: _MEDIA = media_report()
+    # refresh=True also drops the per-process NVENC/encoder probe cache (driver may have been updated).
+    if _MEDIA is None or refresh: _MEDIA = media_report(refresh=refresh)
     return _MEDIA
 
 JOBS = JobManager()
