@@ -22,6 +22,8 @@ Quy ước: `[ ]` Todo · `[~]` In progress · `[x]` Done
 - [~] P1.9 Benchmark RTX 5060 Ti 16 GB: 1024/1536 — Diffusers/ncnn harness đã sẵn sàng, chờ report máy người dùng.
 - [x] P1.10 Tạo asset RGBA và tự động sinh annotation bounds.
 - [x] P1.11 Prompt enhancer tùy chọn.
+- [ ] P1.12 Qwen Diffusers trên 16 GB: profile ghi `quantization: fp8` nhưng provider bỏ qua; transformer bf16 13,3 GB không vừa VRAM trống → crash 0xC0000005 với model offload, sequential offload chạy được nhưng ~64 s/step @512px. Cần transformer fp8/quantized (hoặc group offload) và benchmark lại 1024/1536.
+- [ ] P1.13 `tools/benchmark_qwen.py`: tách thời gian load khỏi run đầu, ghi report từng phần trước khi generate (crash native hiện làm mất report), không nuốt exception khi load lỗi.
 
 ## P2 — Image API
 - [x] P2.1 Adapter HTTP API cấu hình endpoint/model/header.
@@ -36,6 +38,7 @@ Quy ước: `[ ]` Todo · `[~]` In progress · `[x]` Done
 - [x] P3.4 Cache audio theo model/reference/text/settings.
 - [~] P3.5 Benchmark CPU, RTX 3060/4060/5060/5060 Ti — harness/workflow đã sẵn sàng, chờ report máy thật.
 - [x] P3.6 Timeline/SRT integration với pipeline hiện tại.
+- [ ] P3.7 VoxCPM2 trên Windows: RTF 1,7–1,9 trên RTX 5060 Ti (không có triton → torch.compile tắt); đánh giá `triton-windows` hoặc tối ưu khác; `tools/voxcpm_srt.py` in progress lặp `[n/n] Cue n/n` mỗi chunk.
 
 ## P4 — Desktop/Packaging
 - [x] P4.1 Tauri + React project shell.
@@ -45,9 +48,11 @@ Quy ước: `[ ]` Todo · `[~]` In progress · `[x]` Done
 - [~] P4.5 Bundle FFmpeg phù hợp license; NVENC + libx264 fallback — code/test xong (FFmpeg 9.0.2 GPLv3 pin SHA-256, chọn NVENC có kiểm thử, fallback libx264), chờ Windows CI xác nhận installer chứa FFmpeg.
 - [~] P4.6 Smoke test trên máy không có NVIDIA GPU — script + job CI `smoke-no-gpu` sẵn sàng, chờ lần chạy PASS đầu tiên.
 - [~] P4.7 Ký code và quy trình release/update — pipeline ký/release/update check xong, chờ chứng thư code signing và tag phát hành đầu tiên.
+- [ ] P4.8 Chọn thư mục lưu model/cache trên UI (mặc định hiện là `%LOCALAPPDATA%` ở ổ C:, Qwen ~33 GB); hiển thị dung lượng trống; dọn `.cache` HF còn sót trong thư mục model sau download (11,3 GB với qwen-image-2.1).
+- [ ] P4.9 `tools/setup_windows.ps1` cài đủ runtime ML đã test (torch/torchaudio/torchvision cu128, voxcpm 2.0.3, diffusers git main, transformers ≥5.17, accelerate) theo `requirements-backend.txt`.
 
 ## P5 — An toàn và phát hành
 - [x] P5.1 Màn hình consent voice clone và audit metadata.
-- [ ] P5.2 Hiển thị/chấp nhận license model trước download.
+- [ ] P5.2 Hiển thị/chấp nhận license model trước download. Ghi chú test 2026-10-02: `POST /models/<id>/download` khi chưa accept vẫn trả 202 rồi job fail `LicenseNotAccepted` kèm traceback → nên trả 403/409 đồng bộ.
 - [ ] P5.3 Kiểm tra commercial license của Qwen-Image-2.1 trước bản thương mại.
 - [ ] P5.4 Secret scan, dependency scan và SBOM.
