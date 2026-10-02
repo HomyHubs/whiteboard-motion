@@ -7,6 +7,8 @@ from .hardware import detect_nvidia_gpus, hardware_report
 from .profiles import select_qwen_profile
 from .models import ModelManager
 from .projects import ProjectStore,InvalidProjectId
+from .voices import VoiceProfileStore
+from .security.audit import get_voice_audit_log
 from .jobs import JobManager
 from .services import submit_model_download
 from .media import media_report
@@ -22,6 +24,7 @@ def cached_media_report(refresh: bool = False) -> dict:
 JOBS = JobManager()
 MODELS = ModelManager()
 PROJECTS = ProjectStore()
+VOICES = VoiceProfileStore()
 ROOT = Path(__file__).resolve().parent.parent
 
 def demo_job(seconds: float, use_gpu: bool):
@@ -49,7 +52,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(status);self.send_header("Content-Type",content_type);self.send_header("Content-Length",str(len(body)));self.send_header("Access-Control-Allow-Origin","http://localhost:1420");self.end_headers();self.wfile.write(body)
     def _body(self) -> dict:
         size = int(self.headers.get("Content-Length", "0")); raw = self.rfile.read(size) if size else b"{}"
-        return json.loads(raw or b"{}")
+        try: return json.loads(raw or b"{}")
+        except json.JSONDecodeError: return {}
     def do_OPTIONS(self): self._json(204, {})
     def do_GET(self):
         path = urlparse(self.path).path
@@ -69,6 +73,16 @@ class Handler(BaseHTTPRequestHandler):
         if scene_match:
             try:return self._json(200,PROJECTS.load_scene(*scene_match.groups()))
             except (KeyError,InvalidProjectId) as exc:return self._json(404,{"error":str(exc)})
+        if path == "/voices": return self._json(200, VOICES.list())
+        voice_match = re.fullmatch(r"/voices/([a-z0-9-]+)", path)
+        if voice_match:
+            try: return self._json(200, VOICES.get(voice_match.group(1)))
+            except (KeyError, ValueError) as exc: return self._json(404, {"error": str(exc)})
+        if path == "/audit/voice-clones":
+            from urllib.parse import parse_qs
+            qs = parse_qs(urlparse(self.path).query)
+            limit = int(qs.get("limit", [50])[0])
+            return self._json(200, get_voice_audit_log(limit=limit))
         if path == "/hardware": return self._json(200, hardware_report())
         if path == "/profile":
             gpus = detect_nvidia_gpus(); return self._json(200, select_qwen_profile(gpus[0] if gpus else None).to_dict())
@@ -85,6 +99,22 @@ class Handler(BaseHTTPRequestHandler):
             body=self._body()
             try:return self._json(201,PROJECTS.create(str(body.get('name','')),str(body.get('aspectRatio','16:9'))))
             except ValueError as exc:return self._json(400,{'error':str(exc)})
+        if path == "/voices":
+            body = self._body()
+            try:
+                created = VOICES.create(
+                    voice_id=str(body.get("id", "")),
+                    name=str(body.get("name", "")),
+                    language=str(body.get("language", "vi")),
+                    is_clone=bool(body.get("isClone", False)),
+                    reference_audio=Path(body["referenceAudio"]) if body.get("referenceAudio") else None,
+                    reference_text=str(body.get("referenceText", "")),
+                    consent_confirmed=bool(body.get("consentConfirmed", False)),
+                    consent_statement=str(body.get("consentStatement", "")),
+                )
+                return self._json(201, created)
+            except (ValueError, FileNotFoundError, PermissionError) as exc:
+                return self._json(400, {"error": str(exc)})
         model_match=re.fullmatch(r"/models/([A-Za-z0-9._-]+)/(accept|download|verify)",path)
         if model_match:
             model_id,action=model_match.groups()
@@ -107,10 +137,19 @@ class Handler(BaseHTTPRequestHandler):
         try:return self._json(200,PROJECTS.save_scene(*match.groups(),self._body()))
         except (KeyError,ValueError,InvalidProjectId,json.JSONDecodeError) as exc:return self._json(400,{"error":str(exc)})
     def do_DELETE(self):
-        path=urlparse(self.path).path;match=re.fullmatch(r"/models/([A-Za-z0-9._-]+)",path)
+        path=urlparse(self.path).path
+        voice_match = re.fullmatch(r"/voices/([a-z0-9-]+)", path)
+        if voice_match:
+            try:
+                VOICES.delete(voice_match.group(1))
+                return self._json(200, {"deleted": True, "id": voice_match.group(1)})
+            except (KeyError, ValueError) as exc:
+                return self._json(400, {"error": str(exc)})
+        match=re.fullmatch(r"/models/([A-Za-z0-9._-]+)",path)
         if not match:return self._json(404,{"error":"not found"})
         try:MODELS.entry(match.group(1));MODELS.remove(match.group(1));return self._json(200,{"removed":True,"id":match.group(1)})
         except KeyError as exc:return self._json(404,{"error":str(exc)})
+
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(); parser.add_argument("--host", default="127.0.0.1"); parser.add_argument("--port", type=int, default=8765)

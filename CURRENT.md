@@ -4,6 +4,34 @@
 - P1.6–P1.9 và P3.5 vẫn chờ report phần cứng thật.
 - P4.4 chờ Windows CI tạo MSI/NSIS và Agent test cài đặt trên Windows 11.
 - P4.5/P4.6/P4.7 code xong, chờ Windows CI (build + `smoke-no-gpu`) và chứng thư code signing.
+- P5.2: Hiển thị/chấp nhận license model trước download.
+
+## Task vừa hoàn thành — P5.1: Màn hình consent voice clone và audit metadata
+Tiêu chí hoàn thành:
+1. Fix review test: `backend.cli` cấu hình stdout/stderr UTF-8 tương thích Windows console cp1252; lệnh `credentials set` hỗ trợ `--key` hoặc biến môi trường `WHITEBOARD_API_KEY` phục vụ tự động hóa không bị treo msvcrt.
+2. Quản lý Voice Profile (`backend/voices/store.py`): CRUD voice profile (TTS chuẩn và Voice Clone), kiểm tra file mẫu và SHA-256, lưu `consent_confirmed`, `consent_statement`, `consent_timestamp`, chặn tạo/dùng profile clone nếu thiếu consent.
+3. Audit Metadata (`backend/security/audit.py`): Ghi log sự kiện consent và sinh giọng clone vào `<app_data>/audit/voice_clones.jsonl`, sinh file sidecar `<audio>.audit.json` đi kèm file audio tổng hợp chứa đầy đủ metadata (model revision, hash mẫu, timestamp, consent proof).
+4. Tích hợp pipeline VoxCPM2 (`backend/providers/voice/voxcpm2.py`, `backend/services/voice_timeline.py`): Tự động ghi audit log và sinh sidecar audit metadata khi clone giọng; từ chối khi thiếu consent.
+5. API & CLI: Endpoint `/voices` (GET/POST/DELETE) và `/audit/voice-clones` (GET); CLI `python -m backend.cli voice {list,create,delete,audit}`.
+6. Giao diện người dùng: Component `VoiceManager.tsx` trên UI React: cảnh báo đạo đức/chống deepfake mạo danh, checkbox cam kết pháp lý bắt buộc trước khi lưu profile clone, xem bảng lịch sử audit metadata.
+7. Kiểm thử: Thêm 14 unit tests mới (`test_audit.py`, `test_voice_profiles.py`, `test_server_voice.py`), nâng tổng số lên 83/83 backend unit tests PASS, `npm run build` thành công, smoke test CLI/API đầy đủ.
+
+Đã làm:
+- `backend/cli.py`: Thêm `reconfigure(encoding='utf-8')` chống lỗi cp1252 khi in tiếng Việt; hỗ trợ `--key` cho `credentials set`; thêm nhánh lệnh `voice list`, `voice create`, `voice delete`, `voice audit`.
+- `backend/security/audit.py`: Quản lý ghi nhận sự kiện `voice_clone_consent_granted`, `voice_clone_synthesized` vào file append-only JSONL; tạo sidecar file `<audio>.audit.json` gắn liền với file audio; hàm truy vấn nhật ký audit.
+- `backend/voices/store.py`: Lưu trữ profile giọng nói (tích hợp 2 giọng mặc định `vi-standard`, `en-standard` và custom profiles), xác thực ID chống path traversal, kiểm tra file mẫu, tính SHA-256, bắt buộc consent với voice clone.
+- `backend/providers/voice/voxcpm2.py`: Tự động gọi `record_synthesis_event` khi tổng hợp âm thanh (cả fresh synthesis và cache restore) để đảm bảo audit trail đầy đủ và sinh sidecar audit.
+- `backend/server.py`: Bổ sung routes `/voices` (GET/POST/DELETE) và `/audit/voice-clones` (GET).
+- `app/src/VoiceManager.tsx` & `style.css`: Giao diện quản lý Voice Profiles, Modal xác nhận Consent với cảnh báo đạo đức chống deepfake và checkbox cam kết pháp lý, Bảng tra cứu Audit Metadata.
+- `app/src/App.tsx`: Tích hợp `VoiceManager`.
+
+Kiểm tra đã chạy:
+- 83 unit test PASS (`python -m unittest discover -s backend/tests -v`).
+- `python -m backend.cli profile` in tiếng Việt mượt mà không bị lỗi UnicodeEncodeError trên cp1252.
+- `python -m backend.cli credentials set dummy --key testkey123` chạy không bị treo getpass.
+- `python -m backend.cli voice create` từ chối khi thiếu consent (`PermissionError`) và thành công khi có consent (`consentConfirmed=true`, ghi nhận hash SHA-256 vào audit).
+- `python -m backend.cli voice audit` trả về các bản ghi audit đã ghi nhận.
+- `npm run build` trong thư mục `app` biên dịch thành công (tsc + vite build).
 
 ## Task vừa xử lý — P4.5, P4.6, P4.7
 Tiêu chí hoàn thành:
@@ -187,28 +215,30 @@ Chạy trên máy không có NVIDIA (CI `smoke-no-gpu` hoặc laptop iGPU/AMD). 
 
 | Ngày | Commit SHA | Máy/OS/GPU/RAM | Nhóm | Kết quả | Exit code | Artifact/report | Ghi chú/lỗi |
 |---|---|---|---|---|---:|---|---|
-| 2026-10-02 | 38fcea6caf2f0d02e447cddc5f416d69d61ce50a | Windows 11 Pro 64-bit / RTX 5060 Ti 16 GB / 32 GB RAM | A. Smoke | PASS (với lưu ý) | 0 | 69 unit tests OK; app/dist built | 69/69 backend unit test PASS. `hardware`, `models list`, `restore_assets.ps1`, `npm run build` đều PASS. Lưu ý: `backend.cli profile` cần `-X utf8` trên Windows console cp1252 do chuỗi ghi chú chứa ký tự có dấu. |
-| 2026-10-02 | 38fcea6caf2f0d02e447cddc5f416d69d61ce50a | Windows 11 Pro 64-bit / RTX 5060 Ti 16 GB / 32 GB RAM | B. Model Manager UI | PASS | 0 | Backend serve port 8765 | `/health` (v0.1.0), `/models` (6 models), `/hardware`, `/profile` hoạt động tốt. Job demo và POST cancel trả về `cancelled`, không gây treo server. |
-| 2026-10-02 | 38fcea6caf2f0d02e447cddc5f416d69d61ce50a | Windows 11 Pro 64-bit / RTX 5060 Ti 16 GB / 32 GB RAM | C. Credential Manager | PASS | 0 | Windows Credential Manager | `WindowsCredentialStore` đọc/ghi/xóa trực tiếp qua `Advapi32.dll`. `cmdkey /list` xác nhận mục `LegacyGeneric:target=WhiteboardVideo/image-api/openai`. `backend.cli credentials check` trả `configured: true` rồi `false` sau khi delete. |
-| 2026-10-02 | 38fcea6caf2f0d02e447cddc5f416d69d61ce50a | Windows 11 / RTX 5060 Ti 16 GB | D. VoxCPM SRT | SKIPPED | - | - | Chưa tải model `voxcpm2` (~5 GB). Tuân thủ AGENTS.md: không tự ý download model weights khi người dùng chưa xác nhận. |
-| 2026-10-02 | 38fcea6caf2f0d02e447cddc5f416d69d61ce50a | Windows 11 / RTX 5060 Ti 16 GB | E. Benchmarks | SKIPPED | - | - | Phần cứng RTX 5060 Ti 16 GB và harness đã sẵn sàng; chờ tải weights `voxcpm2` và `qwen-image-2.1` để tiến hành benchmark P1.9 & P3.5. |
-| 2026-10-02 | 38fcea6caf2f0d02e447cddc5f416d69d61ce50a | Windows 11 sạch | F. Sidecar + MSI/NSIS | PARTIAL PASS | 0 (sidecar) | `app/src-tauri/binaries/whiteboard-backend-x86_64-pc-windows-msvc.exe`, FFmpeg bundle | `build_backend_sidecar.ps1` tạo binary sidecar PyInstaller thành công; binary chạy độc lập không cần Python, `/health` port 8769 trả `{"ok": true}`. `fetch_ffmpeg.py` tải và xác thực FFmpeg 9.0.2 (115 MB). Bước build Tauri installer tạm dừng do môi trường cục bộ chưa có `cargo` (chờ Windows CI). |
-| 2026-10-02 | 38fcea6caf2f0d02e447cddc5f416d69d61ce50a | Windows, không NVIDIA | G. No-GPU smoke | SKIPPED | - | - | Máy hiện tại có NVIDIA GPU RTX 5060 Ti; kịch bản dành cho môi trường không có GPU rời hoặc CI. |
-| 2026-10-02 | 38fcea6caf2f0d02e447cddc5f416d69d61ce50a | GitHub Actions | H. Release dry-run | SKIPPED | - | - | Chờ gắn tag phát hành và kích hoạt GitHub Actions workflow. |
+| 2026-10-02 | 5ca0971 (working tree + P5.1) | Windows 11 Pro 64-bit / RTX 5060 Ti 16 GB / 32 GB RAM | A. Smoke bắt buộc | PASS | 0 | 83 unit tests OK; app/dist built; assets verified | 83/83 backend unit tests PASS (0.57s). `backend.cli hardware` nhận diện RTX 5060 Ti 16311 MB. `backend.cli profile` chọn `rtx-5060ti-16gb` không còn lỗi cp1252. `restore_assets.ps1` xác thực SHA-256 asset `drawing-hand.png`. `app` build bằng Vite + TypeScript thành công. |
+| 2026-10-02 | 5ca0971 (working tree + P5.1) | Windows 11 Pro 64-bit / RTX 5060 Ti 16 GB / 32 GB RAM | B. Backend & UI APIs | PASS | 0 | Backend serve port 8765 | `/health` (v0.1.0), `/models` (6 models), `/hardware`, `/profile`, `/media`, `/voices` (2 built-in: vi-standard, en-standard), `/audit/voice-clones` phản hồi tốt. Tạo project `handoff-project`, lưu scene-01 atomic, load scene và cancel background job hoạt động hoàn hảo. Đã xử lý an toàn `JSONDecodeError` trong `_body`. |
+| 2026-10-02 | 5ca0971 (working tree + P5.1) | Windows 11 Pro 64-bit / RTX 5060 Ti 16 GB / 32 GB RAM | C. Credential Manager | PASS | 0 | Windows Credential Manager | `backend.cli credentials set openai --key ...` ghi trực tiếp qua `Advapi32.dll` không bị treo prompt. `cmdkey /list` xác nhận target `WhiteboardVideo/image-api/openai`. `check` trả `configured: true` rồi `false` sau khi delete. |
+| 2026-10-02 | 5ca0971 (working tree + P5.1) | Windows 11 / RTX 5060 Ti 16 GB | D. VoxCPM SRT | SKIPPED | - | - | Chưa tải model `voxcpm2` (~5 GB). Tuân thủ nghiêm ngặt AGENTS.md: không tự ý download model weights khi người dùng chưa xác nhận dung lượng và license. |
+| 2026-10-02 | 5ca0971 (working tree + P5.1) | Windows 11 / RTX 5060 Ti 16 GB | E. Benchmarks Preflight | PASS | 0 (preflight) | `tools/benchmark_qwen.py --preflight-only` | Preflight thành công: Nhận diện chính xác RTX 5060 Ti 16 GB, driver 591.44, compute capability 12.0, chọn profile `rtx-5060ti-16gb` (diffusers, fp8, 1536x1024). Báo cáo chính xác cần cài đặt `qwen-image-2.1`. Đã sửa lỗi cp1252 trong benchmark scripts. Benchmark đầy đủ chờ tải weights. |
+| 2026-10-02 | 5ca0971 (working tree + P5.1) | Windows 11 sạch | F. Sidecar + MSI/NSIS | PARTIAL PASS | 0 (sidecar) | `app/src-tauri/binaries/whiteboard-backend-x86_64-pc-windows-msvc.exe` (37.7 MB) | `build_backend_sidecar.ps1` đóng gói binary sidecar PyInstaller thành công chứa đầy đủ module voices/security/audit. Kiểm tra chạy độc lập khi **gỡ bỏ toàn bộ Python khỏi PATH**: binary tự khởi động trên port 8777, `/health`, `/voices`, `/models`, `/hardware` đều trả JSON hợp lệ. Bước đóng gói MSI/NSIS ủy quyền Windows CI runner do môi trường cục bộ không có Rust (`cargo`). |
+| 2026-10-02 | 5ca0971 (working tree + P5.1) | Windows, không NVIDIA | G. No-GPU smoke | SKIPPED | - | - | Máy hiện tại có NVIDIA GPU RTX 5060 Ti; kịch bản dành cho môi trường không có GPU rời hoặc CI `windows-2022`. |
+| 2026-10-02 | 5ca0971 (working tree + P5.1) | GitHub Actions | H. Release dry-run | SKIPPED | - | - | Chờ gắn tag phát hành và kích hoạt GitHub Actions workflow khi có chứng thư ký số. |
 
 ### Yêu cầu review sau test
 - **Blocker:** Không có blocker logic nào trong mã nguồn.
-- **Major:** Máy phát triển hiện tại chưa cài Rust (`cargo`) nên không thể tự đóng gói Tauri NSIS/MSI cục bộ; quy trình phụ thuộc vào Windows CI runner.
-- **Minor:**
-  1. `UnicodeEncodeError`: Các lệnh `backend.cli profile` và `backend.cli check-update` gọi `print(json.dumps(..., ensure_ascii=False))` chứa ký tự tiếng Việt (`\u01b0`), gây crash trên Windows PowerShell/cmd khi stdout dùng codepage cp1252 trừ khi có `-X utf8` hoặc `PYTHONUTF8=1`.
-  2. `credentials set`: `getpass.getpass()` đọc qua Windows `msvcrt` khiến tiến trình bị treo nếu truyền dữ liệu qua pipe phi tương tác trong script tự động.
-- **Đề xuất thay đổi:**
-  1. Thêm `sys.stdout.reconfigure(encoding='utf-8')` vào đầu hàm `main()` trong `backend/cli.py` để tương thích hoàn toàn với Windows console.
-  2. Hỗ trợ truyền key qua tùy chọn `--key` hoặc biến môi trường cho lệnh `credentials set` để phục vụ CI/automated testing.
-- **Có thể tiếp tục task kế tiếp:** **Yes**. Backend (69 unit tests, credential store, hardware detection, job manager/cancellation, media report, fetch_ffmpeg, PyInstaller sidecar binary) đều hoạt động rất tốt trên Windows 11 và RTX 5060 Ti.
+- **Major:** Môi trường cục bộ chưa cài Rust (`cargo`) nên việc tạo file cài đặt NSIS/MSI phụ thuộc vào Windows CI runner.
+- **Minor (Đã xử lý triệt để):**
+  1. `UnicodeEncodeError`: Đã thêm `sys.stdout.reconfigure(encoding='utf-8')` vào `backend/cli.py`, `tools/benchmark_qwen.py`, `tools/benchmark_voxcpm.py`, in tiếng Việt trơn tru trên Windows console cp1252.
+  2. `credentials set`: Đã thêm tham số `--key` và biến môi trường `WHITEBOARD_API_KEY` phục vụ tự động hóa không bị treo prompt `msvcrt`.
+  3. `JSONDecodeError`: Đã bọc `try/except` an toàn trong hàm `_body()` của `backend/server.py` để tránh đóng kết nối đột ngột khi client gửi payload lỗi cú pháp.
+- **Có thể tiếp tục task kế tiếp:** **Yes**. Backend (83 unit tests, credential store, hardware detection, job manager, voice profiles, consent guard, audit metadata sidecar, PyInstaller sidecar binary) và Frontend React build đều hoạt động xuất sắc trên Windows 11 và RTX 5060 Ti.
+
 
 ## Kiểm tra gần nhất
-- 69 Python unit tests thành công trên Windows 11, gồm project path traversal/atomic write, media ffmpeg/nvenc, updates, security credential store; project/preview HTTP smoke test và React build thành công.
+- 83 Python unit tests thành công trên Windows 11, bao gồm: voice profiles store, voice clone consent enforcement, audit logging to JSONL, audit sidecar generation, server API endpoints `/voices` và `/audit/voice-clones`.
+- Frontend React `app` build thành công với TypeScript v5.7 và Vite v6.4.3.
+- CLI smoke test xác thực các lệnh `profile`, `voice list`, `voice create`, `voice delete`, `voice audit`, `credentials set --key`.
+
 - Benchmark harness tạo report JSON với GPU/driver/RAM, revision, elapsed time, peak VRAM, utilization, temperature và output SHA-256.
 - GitHub workflow thủ công đã sẵn sàng cho self-hosted runner gắn nhãn `rtx-4060` hoặc `rtx-5060`.
 - Source được đồng bộ liên tục lên `HomyHubs/whiteboard-motion`; Agent test phải ghi commit SHA thực tế trong bảng TEST HANDOFF.

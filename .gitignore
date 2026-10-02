@@ -39,3 +39,6 @@ app/src-tauri/binaries/*.exe
 app/src-tauri/resources/ffmpeg/
 vendor/ffmpeg/
 benchmarks/smoke-reports/*.json
+assets/drawing-hand.png
+*.patch
+*.spec

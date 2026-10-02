@@ -47,7 +47,7 @@ Quy ước: `[ ]` Todo · `[~]` In progress · `[x]` Done
 - [~] P4.7 Ký code và quy trình release/update — pipeline ký/release/update check xong, chờ chứng thư code signing và tag phát hành đầu tiên.
 
 ## P5 — An toàn và phát hành
-- [ ] P5.1 Màn hình consent voice clone và audit metadata.
+- [x] P5.1 Màn hình consent voice clone và audit metadata.
 - [ ] P5.2 Hiển thị/chấp nhận license model trước download.
 - [ ] P5.3 Kiểm tra commercial license của Qwen-Image-2.1 trước bản thương mại.
 - [ ] P5.4 Secret scan, dependency scan và SBOM.

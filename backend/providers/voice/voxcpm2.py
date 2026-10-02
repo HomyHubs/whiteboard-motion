@@ -5,6 +5,7 @@ import threading
 from typing import Callable
 from ...cache import AudioCache,AudioCacheKey
 from ...cache.audio import file_sha256
+from ...security.audit import record_synthesis_event
 
 @dataclass
 class VoiceRequest:
@@ -32,12 +33,15 @@ class VoxCPM2Provider:
         return AudioCacheKey('voxcpm2',self.model_revision,request.text,request.language,request.seed,file_sha256(request.reference_audio),request.reference_text or '',{'optimize':self.optimize},request.output.suffix.lower().lstrip('.') or 'wav')
     def synthesize(self,request:VoiceRequest)->Path:
         kwargs=self._kwargs(request);key=self._cache_key(request)
-        if self.cache and self.cache.restore(key,request.output):return request.output
+        if self.cache and self.cache.restore(key,request.output):
+            record_synthesis_event(request.output,request.reference_audio,request.text,self.model_revision,request.language,request.consent_confirmed,cached=True)
+            return request.output
         self.load();audio=self._model.generate(**kwargs)
         try:import soundfile as sf
         except ImportError as exc:raise RuntimeError('Thiếu soundfile') from exc
         request.output.parent.mkdir(parents=True,exist_ok=True);sf.write(str(request.output),audio,self.SAMPLE_RATE)
         if self.cache:self.cache.store(key,request.output,{'samples':len(audio),'sample_rate':self.SAMPLE_RATE})
+        record_synthesis_event(request.output,request.reference_audio,request.text,self.model_revision,request.language,request.consent_confirmed,cached=False)
         return request.output
     def synthesize_streaming(self,request:VoiceRequest,cancel_event:threading.Event|None=None,on_progress:Callable[[VoiceProgress],None]|None=None,check_cancelled:Callable[[],None]|None=None)->Path:
         if request.output.suffix.lower() not in {'.wav','.wave'}:raise ValueError('Streaming output must be WAV')
@@ -47,6 +51,7 @@ class VoxCPM2Provider:
             if metadata:
                 samples=int(metadata.get('samples',0));progress=VoiceProgress(0,samples,samples/self.SAMPLE_RATE,True,True)
                 if on_progress:on_progress(progress)
+                record_synthesis_event(request.output,request.reference_audio,request.text,self.model_revision,request.language,request.consent_confirmed,cached=True)
                 return request.output
         self.load()
         try:import numpy as np;import soundfile as sf
@@ -68,10 +73,12 @@ class VoxCPM2Provider:
             part.replace(request.output)
             if self.cache:self.cache.store(key,request.output,{'samples':samples,'sample_rate':self.SAMPLE_RATE,'chunks':chunks})
             if on_progress:on_progress(VoiceProgress(chunks,samples,samples/self.SAMPLE_RATE,True,False))
+            record_synthesis_event(request.output,request.reference_audio,request.text,self.model_revision,request.language,request.consent_confirmed,cached=False)
             return request.output
         except BaseException:
             part.unlink(missing_ok=True);request.output.unlink(missing_ok=True);raise
     def unload(self)->None:
+
         self._model=None
         try:
             import torch

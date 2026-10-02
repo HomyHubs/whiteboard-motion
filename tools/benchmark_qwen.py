@@ -7,6 +7,12 @@ from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
+if hasattr(sys.stdout, "reconfigure"):
+    try: sys.stdout.reconfigure(encoding="utf-8")
+    except Exception: pass
+if hasattr(sys.stderr, "reconfigure"):
+    try: sys.stderr.reconfigure(encoding="utf-8")
+    except Exception: pass
 from backend.hardware import detect_nvidia_gpus
 from backend.models import ModelManager
 from backend.profiles import select_qwen_profile
