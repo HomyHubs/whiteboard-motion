@@ -26,9 +26,19 @@ class VoxCPM2Provider:
         self._model=VoxCPM.from_pretrained(hf_model_id=str(self.model_path),device=self.device,optimize=self.optimize,load_denoiser=False)
     def _kwargs(self,request:VoiceRequest)->dict:
         if request.reference_audio and not request.consent_confirmed:raise PermissionError('Voice clone yêu cầu xác nhận quyền sử dụng giọng mẫu')
-        kwargs={'text':request.text,'seed':request.seed}
-        if request.reference_audio:kwargs.update(prompt_wav_path=str(request.reference_audio),prompt_text=request.reference_text or '')
+        # voxcpm 2.0.3 _generate() has no `seed` kwarg (TypeError); seeding is done via torch in _seed().
+        kwargs={'text':request.text}
+        if request.reference_audio:
+            kwargs['reference_wav_path']=str(request.reference_audio)
+            # Continuation mode needs the transcript; voxcpm requires prompt_wav_path and prompt_text together.
+            if request.reference_text:kwargs.update(prompt_wav_path=str(request.reference_audio),prompt_text=request.reference_text)
         return kwargs
+    @staticmethod
+    def _seed(seed:int)->None:
+        try:import torch
+        except ImportError:return
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():torch.cuda.manual_seed_all(seed)
     def _cache_key(self,request:VoiceRequest)->AudioCacheKey:
         return AudioCacheKey('voxcpm2',self.model_revision,request.text,request.language,request.seed,file_sha256(request.reference_audio),request.reference_text or '',{'optimize':self.optimize},request.output.suffix.lower().lstrip('.') or 'wav')
     def synthesize(self,request:VoiceRequest)->Path:
@@ -36,7 +46,7 @@ class VoxCPM2Provider:
         if self.cache and self.cache.restore(key,request.output):
             record_synthesis_event(request.output,request.reference_audio,request.text,self.model_revision,request.language,request.consent_confirmed,cached=True)
             return request.output
-        self.load();audio=self._model.generate(**kwargs)
+        self.load();self._seed(request.seed);audio=self._model.generate(**kwargs)
         try:import soundfile as sf
         except ImportError as exc:raise RuntimeError('Thiếu soundfile') from exc
         request.output.parent.mkdir(parents=True,exist_ok=True);sf.write(str(request.output),audio,self.SAMPLE_RATE)
@@ -53,7 +63,7 @@ class VoxCPM2Provider:
                 if on_progress:on_progress(progress)
                 record_synthesis_event(request.output,request.reference_audio,request.text,self.model_revision,request.language,request.consent_confirmed,cached=True)
                 return request.output
-        self.load()
+        self.load();self._seed(request.seed)
         try:import numpy as np;import soundfile as sf
         except ImportError as exc:raise RuntimeError('Streaming requires numpy and soundfile') from exc
         def check():

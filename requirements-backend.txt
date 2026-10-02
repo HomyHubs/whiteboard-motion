@@ -4,10 +4,14 @@ Pillow>=10
 soundfile>=0.12
 
 # Install ONE matching PyTorch build separately (Windows CUDA Standard or Blackwell).
-# Local voice:
-# voxcpm>=0.2
-# Local image (pin tested versions before release):
-# torch>=2.5
-# transformers>=5.17
-# diffusers (Qwen-Image-2.1 capable revision)
+# Versions below were tested on Windows 11 + RTX 5060 Ti 16 GB (driver 616.92), 2026-10-02.
+# PyTorch (Blackwell/CUDA 12.8): torch==2.11.0+cu128 torchaudio==2.11.0+cu128 torchvision==0.26.0+cu128
+#   pip install --index-url https://download.pytorch.org/whl/cu128 torch torchaudio torchvision
+# Local voice (2.0.3 generate() has no `seed` kwarg; provider seeds via torch):
+# voxcpm==2.0.3
+# Local image:
+# transformers>=5.17  (tested 5.18)
+# torchvision is required by the Qwen3-VL processor used by QwenImage21Pipeline
+# diffusers: PyPI 0.40.0 has no QwenImage21Pipeline -> install git main (tested 0.41.0.dev0)
+#   pip install git+https://github.com/huggingface/diffusers
 # accelerate
